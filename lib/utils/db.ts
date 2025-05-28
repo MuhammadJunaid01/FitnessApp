@@ -304,8 +304,8 @@
 //   }
 // };
 import axios from 'axios';
-// const BASE_URL = 'http://10.0.2.2:5000'; // Use your server's URL
-const BASE_URL = 'http://192.168.170.76:5000'; // Use your server's URL
+const BASE_URL = 'https://fitness-tracker-dusky-eight.vercel.app/'; // Use your server's URL
+// const BASE_URL = 'http://192.168.170.76:5000'; // Use your server's URL
 
 const axiosInstance = axios.create({
   baseURL: `${BASE_URL}/api/v1`, // Base URL for all requests

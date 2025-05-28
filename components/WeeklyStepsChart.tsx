@@ -5,6 +5,7 @@ import React, {useCallback, useMemo, useState} from 'react';
 import {Dimensions, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {BarChart, LineChart, PieChart} from 'react-native-gifted-charts';
 import {ISteps} from '../lib/interfaces';
+import {getWeeklyDateRange} from '../lib/utils';
 
 interface FitnessDashboardProps {
   fitnessData: ISteps[];
@@ -15,7 +16,9 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
   fitnessData,
   isDarkMode = true,
 }) => {
-  console.log('FITNESS WEEKLY DATA', fitnessData);
+  const weeklyDateRange = useMemo(() => {
+    return getWeeklyDateRange();
+  }, []);
   const [currentMetric, setCurrentMetric] = useState<
     'steps' | 'calories' | 'distance' | 'time'
   >('steps');
@@ -206,6 +209,21 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
         return colors.primary;
     }
   };
+  const useFormatToLocaleDateString = () => {
+    const formatToLocaleDateString = useCallback(
+      (date: Date | string | number, isReturnYear = false): string => {
+        const formatString = isReturnYear
+          ? 'dddd, MMMM D, YYYY'
+          : 'dddd, MMMM D';
+        return moment(date).format(formatString);
+      },
+      [],
+    );
+
+    return formatToLocaleDateString;
+  };
+
+  const formatToLocaleDateString = useFormatToLocaleDateString();
 
   return (
     <ScrollView
@@ -214,12 +232,10 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.dateText, {color: colors.text}]}>
-          {new Date(latestData.date).toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
+          {formatToLocaleDateString(weeklyDateRange.startOfWeek, false)} -
+        </Text>
+        <Text style={[styles.dateText, {color: colors.text}]}>
+          {formatToLocaleDateString(weeklyDateRange.endOfWeek, true)}-
         </Text>
         <Text style={[styles.subtitle, {color: colors.text, opacity: 0.7}]}>
           Fitness Dashboard
