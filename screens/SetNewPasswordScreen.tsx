@@ -90,6 +90,7 @@ const SetNewPasswordScreen: React.FC<Props> = ({navigation, route}) => {
     };
     const response = await resetPassword(payload);
     if (response.success) {
+      navigation.navigate('Login');
       Alert.alert('success');
     }
     // Success

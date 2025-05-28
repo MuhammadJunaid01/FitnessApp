@@ -15,20 +15,48 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import {useHook} from '../hooks/ThemeContext';
 import {IForgotVerifyOtpPayload} from '../lib/interfaces';
 import {verifyForgotPasswordOtp} from '../lib/utils/apis';
+
 type Props = NativeStackScreenProps<any, any>;
+const OTP_EXPIRY_MINUTES = 10;
 const VerifyOTPScreen: React.FC<Props> = ({route, navigation}) => {
+  const {isDark} = useHook();
   const email = route?.params?.email ?? '';
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(OTP_EXPIRY_MINUTES * 60); // 10 minutes in seconds
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswordFields, setShowPasswordFields] = useState(false);
+  const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
+    useState(false);
 
   const inputRefs = useRef<Array<TextInput | null>>([]);
+
+  const theme = {
+    background: isDark ? '#0a1a3a' : '#ffffff',
+    surface: isDark ? '#1e2a4a' : '#f5f5f5',
+    primary: '#4caf50',
+    text: isDark ? '#ffffff' : '#000000',
+    textSecondary: isDark ? '#b0b0b0' : '#666666',
+    inputBackground: isDark ? '#2a3a5a' : '#ffffff',
+    inputText: isDark ? '#ffffff' : '#000000',
+    inputPlaceholder: isDark ? '#888888' : '#999999',
+    border: isDark ? '#3a4a6a' : '#e0e0e0',
+    link: isDark ? '#64b5f6' : '#1976d2',
+    buttonBackground: isDark ? '#ffffff' : '#4caf50',
+    buttonText: isDark ? '#0a1a3a' : '#ffffff',
+    otpBackground: isDark ? '#ffffff' : '#f8f9fa',
+    otpText: isDark ? '#0a1a3a' : '#000000',
+    timer: isDark ? '#ffa726' : '#ff9800',
+    success: '#4caf50',
+    error: '#f44336',
+  };
 
   // Timer for OTP expiration
   useEffect(() => {
@@ -75,11 +103,6 @@ const VerifyOTPScreen: React.FC<Props> = ({route, navigation}) => {
   };
 
   const verifyOTP = async () => {
-    // if (otp.some(digit => !digit)) {
-    //   Alert.alert('Error', 'Please enter the complete verification code');
-    //   return;
-    // }
-
     try {
       setIsLoading(true);
       const payload: IForgotVerifyOtpPayload = {
@@ -90,41 +113,8 @@ const VerifyOTPScreen: React.FC<Props> = ({route, navigation}) => {
       if (response.success) {
         navigation.navigate('setNewPassword', {token: response.data, email});
       }
-      // if (!otpDoc.exists()) {
-      //   Alert.alert('Error', 'Invalid verification code');
-      //   return;
-      // }
-
-      // const otpData = otpDoc.data();
-
-      // Check if OTP is expired
-      // const now = new Date();
-      // const expiresAt = otpData.expiresAt.toDate();
-
-      // if (now > expiresAt) {
-      //   Alert.alert(
-      //     'Error',
-      //     'Verification code has expired. Please request a new one.',
-      //   );
-      //   return;
-      // }
-
-      // Check if OTP is already used
-      // if (otpData.used) {
-      //   Alert.alert('Error', 'This verification code has already been used');
-      //   return;
-      // }
-
-      // Check if OTP matches
-      // const enteredOtp = otp.join('');
-      // if (enteredOtp !== otpData.otp) {
-      //   Alert.alert('Error', 'Invalid verification code');
-      //   return;
-      // }
-
-      // OTP is valid, show password reset fields
       setShowPasswordFields(true);
-    } catch (error) {
+    } catch (error: any) {
       console.log(error.message);
       Alert.alert('Error', 'Failed to verify code. Please try again.');
     } finally {
@@ -151,26 +141,10 @@ const VerifyOTPScreen: React.FC<Props> = ({route, navigation}) => {
 
     try {
       setIsLoading(true);
-
-      // In a real implementation, you would have a proper backend to handle this securely
-      // Here's a simplified approach for demonstration:
-
-      // 1. Mark the OTP as used
-      const otpDocRef = doc(db, 'passwordResetOTPs', otpId);
-      await updateDoc(otpDocRef, {
-        used: true,
-        usedAt: Timestamp.now(),
-      });
-
-      // 2. In a real implementation, you would use Firebase Admin SDK or a Cloud Function
-      // to reset the password. This client-side approach is just for demonstration.
-      // (You would typically NOT sign in the user like this)
-
-      // For demo purposes, we'll show a success message
       Alert.alert('Success', 'Your password has been reset successfully.', [
         {text: 'OK', onPress: () => navigation.navigate('Login')},
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.log(error.message);
       Alert.alert('Error', 'Failed to reset password. Please try again.');
     } finally {
@@ -181,29 +155,7 @@ const VerifyOTPScreen: React.FC<Props> = ({route, navigation}) => {
   const handleResendOTP = async () => {
     try {
       setIsLoading(true);
-
-      // Generate new OTP (this would typically be handled on the server)
-      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-
-      // Update expiration time (15 minutes from now)
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 15);
-
-      // Update OTP in Firestore
-      const otpDocRef = doc(db, 'passwordResetOTPs', otpId);
-      await updateDoc(otpDocRef, {
-        otp: newOtp,
-        createdAt: Timestamp.now(),
-        expiresAt,
-        used: false,
-      });
-
-      // Reset timer
-      setTimeLeft(180);
-
-      // For development purposes
-      console.log('New OTP for development: ', newOtp);
-
+      setTimeLeft(OTP_EXPIRY_MINUTES * 60);
       Alert.alert('Success', 'A new verification code has been sent');
     } catch (error: any) {
       console.log(error.message);
@@ -215,206 +167,469 @@ const VerifyOTPScreen: React.FC<Props> = ({route, navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
-      // Set the status bar style when this screen is focused
-      StatusBar.setBarStyle('light-content'); // For iOS
-      StatusBar.setBackgroundColor('#0a1a3a'); // For Android
+      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
+      StatusBar.setBackgroundColor(theme.background);
 
       return () => {
-        // Reset to default status bar style when this screen is unfocused
         StatusBar.setBarStyle('default');
         StatusBar.setBackgroundColor('#FFFFFF');
       };
-    }, []),
+    }, [isDark, theme.background]),
   );
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, {backgroundColor: theme.background}]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.content}>
-        <Text style={styles.title}>Verify Your Email</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View
+            style={[styles.iconContainer, {backgroundColor: theme.surface}]}>
+            <Icon
+              name={
+                showPasswordFields
+                  ? 'lock-closed-outline'
+                  : 'shield-checkmark-outline'
+              }
+              size={40}
+              color={theme.primary}
+            />
+          </View>
+          <Text style={[styles.title, {color: theme.text}]}>
+            {showPasswordFields ? 'Set New Password' : 'Verify Your Email'}
+          </Text>
+        </View>
 
         {!showPasswordFields ? (
           <>
-            <Text style={styles.subtitle}>
-              Enter the 6-digit verification code sent to {email}
-            </Text>
+            {/* OTP Verification Section */}
+            <View style={styles.otpSection}>
+              <Text style={[styles.subtitle, {color: theme.textSecondary}]}>
+                Enter the 6-digit verification code sent to
+              </Text>
+              <Text style={[styles.emailText, {color: theme.primary}]}>
+                {email}
+              </Text>
 
-            <View style={styles.otpContainer}>
-              {otp.map((digit, index) => (
-                <TextInput
-                  key={index}
-                  ref={ref => {
-                    inputRefs.current[index] = ref;
-                  }}
-                  style={styles.otpInput}
-                  value={digit}
-                  onChangeText={text => handleOtpChange(text, index)}
-                  onKeyPress={e => handleKeyPress(e, index)}
-                  keyboardType="number-pad"
-                  maxLength={1}
-                  selectTextOnFocus
+              <View style={styles.otpContainer}>
+                {otp.map((digit, index) => (
+                  <TextInput
+                    key={index}
+                    ref={ref => {
+                      inputRefs.current[index] = ref;
+                    }}
+                    style={[
+                      styles.otpInput,
+                      {
+                        backgroundColor: theme.otpBackground,
+                        color: theme.otpText,
+                        borderColor: digit ? theme.primary : theme.border,
+                      },
+                    ]}
+                    value={digit}
+                    onChangeText={text => handleOtpChange(text, index)}
+                    onKeyPress={e => handleKeyPress(e, index)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    selectTextOnFocus
+                  />
+                ))}
+              </View>
+
+              {/* Timer */}
+              <View style={styles.timerContainer}>
+                <Icon
+                  name="time-outline"
+                  size={16}
+                  color={timeLeft > 0 ? theme.timer : theme.error}
                 />
-              ))}
-            </View>
-
-            <Text style={styles.timer}>
-              {timeLeft > 0
-                ? `Code expires in ${formatTime(timeLeft)}`
-                : 'Code expired'}
-            </Text>
-
-            <TouchableOpacity
-              onPress={verifyOTP}
-              style={styles.button}
-              disabled={isLoading || otp.some(digit => !digit)}>
-              {isLoading ? (
-                <ActivityIndicator color="#0a1a3a" />
-              ) : (
-                <Text style={styles.buttonText}>Verify Code</Text>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.resendContainer}>
-              <Text style={styles.resendText}>Didn't receive the code? </Text>
-              <TouchableOpacity
-                onPress={handleResendOTP}
-                disabled={isLoading || timeLeft > 0}>
                 <Text
                   style={[
-                    styles.resendLink,
-                    (isLoading || timeLeft > 0) && styles.resendLinkDisabled,
+                    styles.timer,
+                    {color: timeLeft > 0 ? theme.timer : theme.error},
                   ]}>
-                  Resend
+                  {timeLeft > 0
+                    ? `Code expires in ${formatTime(timeLeft)}`
+                    : 'Code expired'}
                 </Text>
+              </View>
+
+              {/* Verify Button */}
+              <TouchableOpacity
+                onPress={verifyOTP}
+                style={[
+                  styles.button,
+                  {backgroundColor: theme.buttonBackground},
+                  (isLoading || otp.some(digit => !digit)) &&
+                    styles.disabledButton,
+                ]}
+                disabled={isLoading || otp.some(digit => !digit)}>
+                {isLoading ? (
+                  <ActivityIndicator color={theme.buttonText} size="small" />
+                ) : (
+                  <>
+                    <Icon
+                      name="checkmark-circle-outline"
+                      size={20}
+                      color={theme.buttonText}
+                      style={styles.buttonIcon}
+                    />
+                    <Text
+                      style={[styles.buttonText, {color: theme.buttonText}]}>
+                      Verify Code
+                    </Text>
+                  </>
+                )}
               </TouchableOpacity>
+
+              {/* Resend Section */}
+              <View style={styles.resendContainer}>
+                <Text style={[styles.resendText, {color: theme.textSecondary}]}>
+                  Didn't receive the code?{' '}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleResendOTP}
+                  disabled={isLoading || timeLeft > 0}
+                  style={styles.resendButton}>
+                  <Icon
+                    name="refresh-outline"
+                    size={16}
+                    color={
+                      isLoading || timeLeft > 0
+                        ? theme.textSecondary
+                        : theme.link
+                    }
+                    style={styles.resendIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.resendLink,
+                      {
+                        color:
+                          isLoading || timeLeft > 0
+                            ? theme.textSecondary
+                            : theme.link,
+                      },
+                    ]}>
+                    Resend
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </>
         ) : (
           <>
-            <Text style={styles.subtitle}>
-              Create a new password for your account
-            </Text>
+            {/* Password Reset Section */}
+            <View style={styles.passwordSection}>
+              <Text style={[styles.subtitle, {color: theme.textSecondary}]}>
+                Create a new password for your account
+              </Text>
 
-            <TextInput
-              placeholder="New Password"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              style={styles.input}
-              secureTextEntry
-            />
+              {/* New Password Input */}
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: theme.inputBackground,
+                    borderColor: theme.border,
+                  },
+                ]}>
+                <Icon
+                  name="lock-closed-outline"
+                  size={20}
+                  color={theme.textSecondary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="New Password"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  style={[styles.input, {color: theme.inputText}]}
+                  secureTextEntry={!isNewPasswordVisible}
+                  placeholderTextColor={theme.inputPlaceholder}
+                />
+                <TouchableOpacity
+                  onPress={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
+                  style={styles.eyeIcon}>
+                  <Icon
+                    name={
+                      isNewPasswordVisible ? 'eye-outline' : 'eye-off-outline'
+                    }
+                    size={20}
+                    color={theme.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
 
-            <TextInput
-              placeholder="Confirm New Password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              style={styles.input}
-              secureTextEntry
-            />
+              {/* Confirm Password Input */}
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: theme.inputBackground,
+                    borderColor: theme.border,
+                  },
+                ]}>
+                <Icon
+                  name="lock-closed-outline"
+                  size={20}
+                  color={theme.textSecondary}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="Confirm New Password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  style={[styles.input, {color: theme.inputText}]}
+                  secureTextEntry={!isConfirmPasswordVisible}
+                  placeholderTextColor={theme.inputPlaceholder}
+                />
+                <TouchableOpacity
+                  onPress={() =>
+                    setIsConfirmPasswordVisible(!isConfirmPasswordVisible)
+                  }
+                  style={styles.eyeIcon}>
+                  <Icon
+                    name={
+                      isConfirmPasswordVisible
+                        ? 'eye-outline'
+                        : 'eye-off-outline'
+                    }
+                    size={20}
+                    color={theme.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
 
-            <TouchableOpacity
-              onPress={handleResetPassword}
-              style={styles.button}
-              disabled={isLoading}>
-              {isLoading ? (
-                <ActivityIndicator color="#0a1a3a" />
-              ) : (
-                <Text style={styles.buttonText}>Reset Password</Text>
-              )}
-            </TouchableOpacity>
+              {/* Password Requirements */}
+              <View style={styles.requirementsContainer}>
+                <Icon
+                  name="information-circle-outline"
+                  size={16}
+                  color={theme.textSecondary}
+                  style={styles.requirementIcon}
+                />
+                <Text
+                  style={[
+                    styles.requirementText,
+                    {color: theme.textSecondary},
+                  ]}>
+                  Password must be at least 6 characters long
+                </Text>
+              </View>
+
+              {/* Reset Password Button */}
+              <TouchableOpacity
+                onPress={handleResetPassword}
+                style={[
+                  styles.button,
+                  {backgroundColor: theme.buttonBackground},
+                  isLoading && styles.disabledButton,
+                ]}
+                disabled={isLoading}>
+                {isLoading ? (
+                  <ActivityIndicator color={theme.buttonText} size="small" />
+                ) : (
+                  <>
+                    <Icon
+                      name="shield-checkmark-outline"
+                      size={20}
+                      color={theme.buttonText}
+                      style={styles.buttonIcon}
+                    />
+                    <Text
+                      style={[styles.buttonText, {color: theme.buttonText}]}>
+                      Reset Password
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </>
         )}
 
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backLink}>Back</Text>
-        </TouchableOpacity>
+        {/* Back Button */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}>
+            <Icon
+              name="arrow-back-outline"
+              size={20}
+              color={theme.link}
+              style={styles.backIcon}
+            />
+            <Text style={[styles.backLink, {color: theme.link}]}>Back</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
 };
+
 export default VerifyOTPScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a1a3a',
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
     paddingHorizontal: 20,
+    paddingTop: 60,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: 'white',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
+  },
+  otpSection: {
+    flex: 1,
+    justifyContent: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#cccccc',
+    textAlign: 'center',
+    marginBottom: 8,
+    paddingHorizontal: 20,
+  },
+  emailText: {
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
     marginBottom: 30,
-    paddingHorizontal: 20,
   },
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 24,
+    paddingHorizontal: 10,
   },
   otpInput: {
-    backgroundColor: 'white',
-    width: 45,
-    height: 50,
-    borderRadius: 8,
+    width: 48,
+    height: 56,
+    borderRadius: 12,
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#0a1a3a',
+    borderWidth: 2,
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
   },
   timer: {
-    color: '#cccccc',
-    textAlign: 'center',
-    marginBottom: 20,
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: '500',
   },
-  input: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-    color: 'black',
-  },
-  button: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 15,
-    minHeight: 50,
+  passwordSection: {
+    flex: 1,
     justifyContent: 'center',
   },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderWidth: 1,
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
+  },
+  eyeIcon: {
+    padding: 8,
+  },
+  requirementsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 4,
+  },
+  requirementIcon: {
+    marginRight: 8,
+  },
+  requirementText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+    borderRadius: 12,
+    marginBottom: 24,
+    minHeight: 56,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
   buttonText: {
-    color: '#0a1a3a',
     fontWeight: 'bold',
     fontSize: 16,
   },
   resendContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 20,
+    alignItems: 'center',
+    marginBottom: 24,
   },
   resendText: {
-    color: '#cccccc',
+    fontSize: 14,
+  },
+  resendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resendIcon: {
+    marginRight: 4,
   },
   resendLink: {
-    color: 'white',
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
   },
-  resendLinkDisabled: {
-    color: '#666666',
+  footer: {
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  backIcon: {
+    marginRight: 8,
   },
   backLink: {
-    color: 'white',
-    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
