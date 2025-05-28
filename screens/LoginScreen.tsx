@@ -71,7 +71,7 @@ const LoginScreen: React.FC<Props> = ({navigation, route}) => {
           message: 'Login Successful!',
         });
         setUser(response.data);
-        // navigation.replace('MainTabs');
+        navigation.replace('MainTabs');
       }
     } catch (error: any) {
       console.log(error.message);
