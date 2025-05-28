@@ -31,8 +31,8 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   // const {saveSteps} = useHealthConnectSteps();
   // const {stepCount: steps} = useStepCounter();
   // const {dailySteps, requestPermission} = useHealthData();
-  const {isDark, toggleTheme, user} = useHook();
-  const [goal, setGoal] = useState<IGoal | null>(null);
+  const {isDark, toggleTheme, user, goal, setGoal} = useHook();
+  // const [goal, setGoal] = useState<IGoal | null>(null);
   const [userPreferences, setUserPreferences] =
     useState<IUserPhysicalStats | null>(null);
   const metricsData: ICalculate = useMemo(() => {
@@ -131,7 +131,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       }
     };
     getGoalByUserId();
-  }, [user]);
+  }, [setGoal, user]);
   useEffect(() => {
     const fetchDailyStepData = async () => {
       if (user?._id) {

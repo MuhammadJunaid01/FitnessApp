@@ -1,20 +1,12 @@
 /* eslint-disable react/no-unstable-nested-components */
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {Dimensions, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {BarChart, LineChart, PieChart} from 'react-native-gifted-charts';
-
-interface FitnessData {
-  caloriesBurn: number;
-  date: string;
-  kilometers: number;
-  minutes: number;
-  step: number;
-  userId: string;
-}
+import {ISteps} from '../lib/interfaces';
 
 interface DailyStepsChartProps {
-  fitnessData: FitnessData[];
+  fitnessData: ISteps[];
   isDarkMode?: boolean;
 }
 
@@ -41,15 +33,15 @@ const DailyStepsChart: React.FC<DailyStepsChartProps> = ({
   // Get latest data for summary cards
   const latestData = fitnessData[fitnessData.length - 1] || {
     step: 0,
-    caloriesBurn: 0,
+    caloriesBurned: 0,
     kilometers: 0,
-    minutes: 0,
+    spendMinutes: 0,
     date: new Date().toISOString().split('T')[0],
   };
 
   // Prepare line chart data for trends
-  const prepareLineChartData = (metric: keyof FitnessData) => {
-    return fitnessData.map((item, index) => ({
+  const prepareLineChartData = (metric: keyof ISteps) => {
+    return fitnessData.map(item => ({
       value: typeof item[metric] === 'number' ? item[metric] : 0,
       label: new Date(item.date).getDate().toString(),
       dataPointText:
@@ -60,15 +52,15 @@ const DailyStepsChart: React.FC<DailyStepsChartProps> = ({
   // Prepare pie chart data for today's activity breakdown
   const pieData = [
     {
-      value: Math.max(latestData.step, 1),
+      value: Math.max(latestData?.steps, 1),
       color: colors.primary,
-      text: `${latestData.step}`,
+      text: `${latestData.steps}`,
       label: 'Steps',
     },
     {
-      value: Math.max(Math.round(latestData.caloriesBurn), 1),
+      value: Math.max(Math.round(latestData.caloriesBurned), 1),
       color: colors.secondary,
-      text: `${Math.round(latestData.caloriesBurn)}`,
+      text: `${Math.round(latestData.caloriesBurned)}`,
       label: 'Calories',
     },
     {
@@ -78,9 +70,9 @@ const DailyStepsChart: React.FC<DailyStepsChartProps> = ({
       label: 'Distance',
     },
     {
-      value: Math.max(Math.round(latestData.minutes), 1),
+      value: Math.max(Math.round(latestData.spendMinutes), 1),
       color: colors.accent,
-      text: `${Math.round(latestData.minutes)}min`,
+      text: `${Math.round(latestData.spendMinutes)}min`,
       label: 'Time',
     },
   ];
@@ -89,27 +81,27 @@ const DailyStepsChart: React.FC<DailyStepsChartProps> = ({
   const summaryCards = [
     {
       title: 'Steps',
-      value: latestData.step.toLocaleString(),
+      value: latestData?.steps?.toLocaleString(),
       color: colors.primary,
       trend:
         fitnessData.length > 1
           ? (
-              ((latestData.step - fitnessData[fitnessData.length - 2].step) /
-                fitnessData[fitnessData.length - 2].step) *
+              ((latestData.steps - fitnessData[fitnessData.length - 2].steps) /
+                fitnessData[fitnessData.length - 2].steps) *
               100
             ).toFixed(1)
           : '0',
     },
     {
       title: 'Calories',
-      value: latestData.caloriesBurn.toFixed(1),
+      value: latestData?.caloriesBurned?.toFixed(1),
       color: colors.secondary,
       trend:
         fitnessData.length > 1
           ? (
-              ((latestData.caloriesBurn -
-                fitnessData[fitnessData.length - 2].caloriesBurn) /
-                fitnessData[fitnessData.length - 2].caloriesBurn) *
+              ((latestData.caloriesBurned -
+                fitnessData[fitnessData.length - 2].caloriesBurned) /
+                fitnessData[fitnessData.length - 2].caloriesBurned) *
               100
             ).toFixed(1)
           : '0',
@@ -130,14 +122,14 @@ const DailyStepsChart: React.FC<DailyStepsChartProps> = ({
     },
     {
       title: 'Time (min)',
-      value: latestData.minutes.toFixed(1),
+      value: latestData.spendMinutes.toFixed(1),
       color: colors.accent,
       trend:
         fitnessData.length > 1
           ? (
-              ((latestData.minutes -
-                fitnessData[fitnessData.length - 2].minutes) /
-                fitnessData[fitnessData.length - 2].minutes) *
+              ((latestData.spendMinutes -
+                fitnessData[fitnessData.length - 2].spendMinutes) /
+                fitnessData[fitnessData.length - 2].spendMinutes) *
               100
             ).toFixed(1)
           : '0',
@@ -164,15 +156,15 @@ const DailyStepsChart: React.FC<DailyStepsChartProps> = ({
   const getCurrentChartData = () => {
     switch (currentMetric) {
       case 'steps':
-        return prepareLineChartData('step');
+        return prepareLineChartData('steps');
       case 'calories':
-        return prepareLineChartData('caloriesBurn');
+        return prepareLineChartData('caloriesBurned');
       case 'distance':
         return prepareLineChartData('kilometers');
       case 'time':
-        return prepareLineChartData('minutes');
+        return prepareLineChartData('spendMinutes');
       default:
-        return prepareLineChartData('step');
+        return prepareLineChartData('steps');
     }
   };
 
@@ -236,7 +228,7 @@ const DailyStepsChart: React.FC<DailyStepsChartProps> = ({
                 </Text>
                 <Text
                   style={[styles.centerLabelValue, {color: colors.primary}]}>
-                  {latestData.step}
+                  {latestData.steps}
                 </Text>
               </View>
             )}
@@ -328,7 +320,7 @@ const DailyStepsChart: React.FC<DailyStepsChartProps> = ({
           </Text>
           <BarChart
             data={fitnessData.slice(-7).map(item => ({
-              value: item.step,
+              value: item.steps,
               label: new Date(item.date).toLocaleDateString('en-US', {
                 weekday: 'short',
               }),

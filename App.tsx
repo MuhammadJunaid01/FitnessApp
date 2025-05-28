@@ -9,6 +9,7 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {ThemeProvider} from './hooks/ThemeContext';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import HistoryScreen from './screens/HistoryScreen';
 import HomeScreen from './screens/HomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import ProfileScreen from './screens/ProfileScreen';
@@ -48,6 +49,11 @@ function MainTabs() {
         options={{headerShown: false}}
         name="Profile"
         component={ProfileScreen}
+      />
+      <Tab.Screen
+        options={{headerShown: false}}
+        name="History"
+        component={HistoryScreen}
       />
       {/* <Tab.Screen
         options={{headerShown: false}}

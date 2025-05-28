@@ -138,3 +138,13 @@ export interface IUpdateProfilePayload {
   address?: string;
   phoneNumber?: string;
 }
+
+export interface DateRange {
+  startDate: string;
+  endDate: string;
+}
+
+export interface WeeklyDateRange {
+  startOfWeek: string;
+  endOfWeek: string;
+}

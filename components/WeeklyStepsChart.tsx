@@ -4,18 +4,10 @@ import moment from 'moment';
 import React, {useCallback, useMemo, useState} from 'react';
 import {Dimensions, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {BarChart, LineChart, PieChart} from 'react-native-gifted-charts';
-
-interface FitnessData {
-  caloriesBurn: number;
-  date: string;
-  kilometers: number;
-  minutes: number;
-  step: number;
-  userId: string;
-}
+import {ISteps} from '../lib/interfaces';
 
 interface FitnessDashboardProps {
-  fitnessData: FitnessData[];
+  fitnessData: ISteps[];
   isDarkMode?: boolean;
 }
 
@@ -41,33 +33,37 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
   };
   // Get latest data for summary cards
   // const latestData = fitnessData[fitnessData?.length - 1] || {
-  //   step: 0,
-  //   caloriesBurn: 0,
+  //   steps: 0,
+  //   caloriesBurned: 0,
   //   kilometers: 0,
-  //   minutes: 0,
+  //   spendMinutes: 0,
   //   date: new Date().toISOString().split('T')[0],
   // };
-  const filterTodayData = useCallback((data: FitnessData[]): FitnessData => {
+  const filterTodayData = useCallback((data: ISteps[]): ISteps => {
     const today = moment().format('YYYY-MM-DD'); // Get today's date in "YYYY-MM-DD" format
 
     return (
-      data?.find(d => d.date === today) || {
-        caloriesBurn: 0,
-        date: today,
+      data?.find(d => moment(d.date).format('YYYY-MM-DD') === today) || {
+        caloriesBurned: 0,
+        date: new Date(today), // Ensure `date` is a `Date` object
         kilometers: 0,
-        minutes: 0,
-        step: 0,
-        userId: '',
+        spendMinutes: 0,
+        steps: 0,
+        user: '', // Default to an empty string; ensure this aligns with your data model
+        isGoalReached: false,
+        walkSessions: 0, // Set to a number instead of an array
+        avgStepsPerHour: 0, // Default numeric value
       }
     );
   }, []);
+
   const latestData = useMemo(() => {
     return filterTodayData(fitnessData);
   }, [filterTodayData, fitnessData]);
   console.log('LATEST DATA', fitnessData[fitnessData?.length - 1]);
 
   // Prepare line chart data for trends
-  const prepareLineChartData = (metric: keyof FitnessData) => {
+  const prepareLineChartData = (metric: keyof ISteps) => {
     return fitnessData?.map(item => ({
       value: typeof item[metric] === 'number' ? item[metric] : 0,
       label: new Date(item.date).getDate().toString(),
@@ -79,15 +75,15 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
   // Prepare pie chart data for today's activity breakdown
   const pieData = [
     {
-      value: latestData?.step || 0,
+      value: latestData?.steps || 0,
       color: colors.primary,
-      text: String(latestData?.step || 0),
+      text: String(latestData?.steps || 0),
       label: 'Steps',
     },
     {
-      value: Math.round(latestData?.caloriesBurn || 0),
+      value: Math.round(latestData?.caloriesBurned || 0),
       color: colors.secondary,
-      text: String(Math.round(latestData?.caloriesBurn || 0)),
+      text: String(Math.round(latestData?.caloriesBurned || 0)),
       label: 'Calories',
     },
     {
@@ -97,9 +93,9 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
       label: 'Distance',
     },
     {
-      value: Math.round(latestData?.minutes || 0),
+      value: Math.round(latestData?.spendMinutes || 0),
       color: colors.accent,
-      text: String(Math.round(latestData?.minutes || 0)),
+      text: String(Math.round(latestData?.spendMinutes || 0)),
       label: 'Minutes',
     },
   ];
@@ -108,28 +104,28 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
   const summaryCards = [
     {
       title: 'Steps',
-      value: latestData?.step?.toLocaleString() || 0,
+      value: latestData?.steps?.toLocaleString() || 0,
       color: colors.primary,
       trend:
         fitnessData?.length > 1
           ? (
-              ((latestData?.step ||
-                0 - fitnessData[fitnessData?.length - 2]?.step) /
-                fitnessData[fitnessData?.length - 2]?.step) *
+              ((latestData?.steps ||
+                0 - fitnessData[fitnessData?.length - 2]?.steps) /
+                fitnessData[fitnessData?.length - 2]?.steps) *
               100
             ).toFixed(1)
           : '0',
     },
     {
       title: 'Calories',
-      value: latestData?.caloriesBurn?.toFixed(1) || 0,
+      value: latestData?.caloriesBurned?.toFixed(1) || 0,
       color: colors.secondary,
       trend:
         fitnessData?.length > 1
           ? (
-              ((latestData?.caloriesBurn ||
-                0 - fitnessData[fitnessData?.length - 2].caloriesBurn) /
-                fitnessData[fitnessData?.length - 2].caloriesBurn) *
+              ((latestData?.caloriesBurned ||
+                0 - fitnessData[fitnessData?.length - 2].caloriesBurned) /
+                fitnessData[fitnessData?.length - 2].caloriesBurned) *
               100
             ).toFixed(1)
           : '0',
@@ -150,14 +146,14 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
     },
     {
       title: 'Time (min)',
-      value: latestData.minutes.toFixed(1),
+      value: latestData.spendMinutes.toFixed(1),
       color: colors.accent,
       trend:
         fitnessData?.length > 1
           ? (
-              ((latestData.minutes -
-                fitnessData[fitnessData?.length - 2]?.minutes) /
-                fitnessData[fitnessData?.length - 2]?.minutes) *
+              ((latestData.spendMinutes -
+                fitnessData[fitnessData?.length - 2]?.spendMinutes) /
+                fitnessData[fitnessData?.length - 2]?.spendMinutes) *
               100
             )?.toFixed(1)
           : '0',
@@ -184,15 +180,15 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
   const getCurrentChartData = () => {
     switch (currentMetric) {
       case 'steps':
-        return prepareLineChartData('step');
+        return prepareLineChartData('steps');
       case 'calories':
-        return prepareLineChartData('caloriesBurn');
+        return prepareLineChartData('caloriesBurned');
       case 'distance':
         return prepareLineChartData('kilometers');
       case 'time':
-        return prepareLineChartData('minutes');
+        return prepareLineChartData('spendMinutes');
       default:
-        return prepareLineChartData('step');
+        return prepareLineChartData('steps');
     }
   };
 
@@ -256,7 +252,7 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
                 </Text>
                 <Text
                   style={[styles.centerLabelValue, {color: colors.primary}]}>
-                  {latestData.step}
+                  {latestData.steps}
                 </Text>
               </View>
             )}
@@ -348,7 +344,7 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
           </Text>
           <BarChart
             data={fitnessData?.slice(-7)?.map(item => ({
-              value: item.step,
+              value: item.steps,
               label: new Date(item.date).toLocaleDateString('en-US', {
                 weekday: 'short',
               }),
@@ -356,9 +352,9 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
             }))}
             width={screenWidth - 32}
             height={220}
-            barWidth={25}
+            barWidth={8}
             spacing={20}
-            barBorderRadius={4}
+            barBorderRadius={10}
             backgroundColor={colors.cardBackground}
             yAxisTextStyle={{color: colors.text}}
             xAxisLabelTextStyle={{color: colors.text}}
@@ -426,7 +422,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   chartHeader: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,

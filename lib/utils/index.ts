@@ -1,4 +1,5 @@
 import moment from 'moment';
+import {DateRange, WeeklyDateRange} from '../interfaces';
 
 interface InputData {
   dateTime: string; // ISO date string
@@ -41,73 +42,17 @@ export const calculateDailyStepPercentage = (
 
   return Math.min((dailyStep / dailyGoal) * 100, 100);
 };
-export const calculateWalkMetrics = (
-  step: number,
-  weight: number,
-  gender: 'male' | 'female',
-  height: number,
-  walkType: 'Slow walking' | 'Brisk walking' | 'Jogging' | 'Running',
-): {
-  caloriesBurned: number;
-  kilometers: number;
-  walkSessions: number;
-  avgStepsPerHour: number;
-  spendMinutes: number;
-} => {
-  const ACTIVITY_CONFIG = {
-    'Slow walking': {
-      threshold: 10.5,
-      minStepInterval: 500,
-      googleFitActivity: 'walking',
-    },
-    'Brisk walking': {
-      threshold: 11.5,
-      minStepInterval: 400,
-      googleFitActivity: 'walking',
-    },
-    Jogging: {
-      threshold: 13.0,
-      minStepInterval: 300,
-      googleFitActivity: 'running',
-    },
-    Running: {
-      threshold: 15.0,
-      minStepInterval: 200,
-      googleFitActivity: 'running',
-    },
-  };
+export const getTodayDateRange = (): DateRange => {
+  const startDate = moment().startOf('day').toISOString(); // Start of today
+  const endDate = moment().endOf('day').toISOString(); // End of today
 
-  const MET_VALUES: Record<typeof walkType, number> = {
-    'Slow walking': 2.0,
-    'Brisk walking': 3.5,
-    Jogging: 7.0,
-    Running: 9.8,
-  };
+  return {startDate, endDate};
+};
 
-  // Calculate stride length based on gender
-  const avgStrideLength = gender === 'male' ? height * 0.415 : height * 0.413; // cm
+// Get this week's date range (from Sunday to Saturday)
+export const getWeeklyDateRange = (): WeeklyDateRange => {
+  const startOfWeek = moment().startOf('week').toISOString(); // Start of the week
+  const endOfWeek = moment().endOf('week').toISOString(); // End of the week
 
-  // Convert steps to kilometers
-  const kilometers = (step * avgStrideLength) / 100000; // Convert cm to km
-
-  // Approximate session duration (average step per minute based on walkType)
-  const stepPerMinute = 60000 / ACTIVITY_CONFIG[walkType].minStepInterval; // steps per minute
-  const spendMinutes = step / stepPerMinute;
-
-  // Convert minutes to hours for calorie calculation
-  const sessionDurationHours = spendMinutes / 60;
-
-  // Calculate calories burned
-  const caloriesBurned = MET_VALUES[walkType] * weight * sessionDurationHours;
-
-  // Calculate average steps per hour
-  const avgStepsPerHour = (step / spendMinutes) * 60 || 0;
-
-  return {
-    caloriesBurned: parseFloat(caloriesBurned.toFixed(2)),
-    kilometers: parseFloat(kilometers.toFixed(2)),
-    walkSessions: 1, // Assume one session for this standalone function
-    avgStepsPerHour: parseFloat(avgStepsPerHour.toFixed(2)),
-    spendMinutes: Math.round(spendMinutes),
-  };
+  return {startOfWeek, endOfWeek};
 };
