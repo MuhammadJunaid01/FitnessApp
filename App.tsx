@@ -11,7 +11,10 @@ import {ThemeProvider} from './hooks/ThemeContext';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import HomeScreen from './screens/HomeScreen';
 import LoginScreen from './screens/LoginScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import SetGoalScreen from './screens/SetGoalScreen';
 import SetNewPasswordScreen from './screens/SetNewPasswordScreen';
+import SettingsScreen from './screens/SettingsScreen';
 import SignUpScreen from './screens/SignUpScreen';
 import VerifyOTPScreen from './screens/VerifyOTPScreen';
 // import VerifyOTPScreen from './screens/VerifyOTPScreen';
@@ -36,16 +39,22 @@ function MainTabs() {
         options={{headerShown: false}}
         component={HomeScreen}
       />
-      {/* <Tab.Screen
-        options={{headerShown: false}}
-        name="Profile"
-        component={ProfileScreen}
-      />
       <Tab.Screen
         options={{headerShown: false}}
         name="Settings"
         component={SettingsScreen}
       />
+      <Tab.Screen
+        options={{headerShown: false}}
+        name="Profile"
+        component={ProfileScreen}
+      />
+      {/* <Tab.Screen
+        options={{headerShown: false}}
+        name="Profile"
+        component={ProfileScreen}
+      />
+
       <Tab.Screen
         options={{headerShown: false}}
         name="History"
@@ -93,7 +102,7 @@ export default function App() {
                 component={SetNewPasswordScreen}
               />
               <Stack.Screen name="SignUp" component={SignUpScreen} />
-              {/* <Stack.Screen name="SetGoal" component={SetGoalScreen} /> */}
+              <Stack.Screen name="SetGoal" component={SetGoalScreen} />
               <Stack.Screen name="MainTabs" component={MainTabs} />
             </Stack.Navigator>
           </NavigationContainer>

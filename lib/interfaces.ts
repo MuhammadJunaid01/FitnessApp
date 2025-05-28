@@ -14,6 +14,7 @@ export interface IUser {
   resetToken?: string;
   resetTokenExpires?: Date;
   isVerified?: boolean;
+  phoneNumber: string;
 }
 
 export interface Calorie {
@@ -126,4 +127,14 @@ export interface IUserPhysicalStats {
 }
 export interface IUpdateAppearancePayload {
   appearance: 'darkMode' | 'lightMode';
+}
+export interface IGoal {
+  userId: string | IUser | null;
+  weeklyGoal: number;
+  dailyGoal: number;
+}
+export interface IUpdateProfilePayload {
+  name: string;
+  address?: string;
+  phoneNumber?: string;
 }

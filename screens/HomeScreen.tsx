@@ -22,13 +22,9 @@ import StatCard from '../components/StatCard';
 import StepProgressCircle from '../components/StepProgressCircle';
 import {useHook} from '../hooks/ThemeContext';
 import useStepWriter, {ICalculate} from '../hooks/useStepWriter';
-import {
-  IGetStepsPayload,
-  IUserGoal,
-  IUserPhysicalStats,
-} from '../lib/interfaces';
+import {IGetStepsPayload, IGoal, IUserPhysicalStats} from '../lib/interfaces';
 import {calculateDailyStepPercentage} from '../lib/utils';
-import {getStepsByDateRange, getUserStats} from '../lib/utils/apis';
+import {getGoal, getStepsByDateRange, getUserStats} from '../lib/utils/apis';
 
 type Props = NativeStackScreenProps<any, any>;
 const HomeScreen: React.FC<Props> = ({navigation}) => {
@@ -36,7 +32,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   // const {stepCount: steps} = useStepCounter();
   // const {dailySteps, requestPermission} = useHealthData();
   const {isDark, toggleTheme, user} = useHook();
-  const [goal, setGoal] = useState<IUserGoal | null>(null);
+  const [goal, setGoal] = useState<IGoal | null>(null);
   const [userPreferences, setUserPreferences] =
     useState<IUserPhysicalStats | null>(null);
   const metricsData: ICalculate = useMemo(() => {
@@ -127,15 +123,15 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
   //     }
   //   }
   // }, [calculateWalkMetrics, userCurrent, userPreferences, steps]);
-  // useEffect(() => {
-  //   const getGoal = async () => {
-  //     if (user) {
-  //       const goalData = await getGoalByUserId(user);
-  //       setGoal(goalData);
-  //     }
-  //   };
-  //   getGoal();
-  // }, [user]);
+  useEffect(() => {
+    const getGoalByUserId = async () => {
+      if (user?._id) {
+        const goalData = await getGoal(user._id);
+        setGoal(goalData.data);
+      }
+    };
+    getGoalByUserId();
+  }, [user]);
   useEffect(() => {
     const fetchDailyStepData = async () => {
       if (user?._id) {

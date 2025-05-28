@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react/no-unstable-nested-components */
-import firestore from '@react-native-firebase/firestore';
+
 import React, {useState} from 'react';
 import {
   Alert,
@@ -14,6 +14,9 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {IGoal} from '../lib/interfaces';
+import {updateAndCreateGoal} from '../lib/utils/apis';
+import showToast from '../lib/utils/showToast';
 
 // Types and Data
 export type ActivityType =
@@ -47,10 +50,6 @@ interface SetGoalProps {
 }
 
 const SetGoal: React.FC<SetGoalProps> = ({isDarkMode, userId}) => {
-  const [selectedDay, setSelectedDay] = useState<string>('');
-  const [selectedActivity, setSelectedActivity] = useState<ActivityType | ''>(
-    '',
-  );
   console.log('userId', userId);
   const [goalValue, setGoalValue] = useState<string>('');
   const [weeklyGoalValue, setWeeklyGoalValue] = useState<string>('');
@@ -74,58 +73,45 @@ const SetGoal: React.FC<SetGoalProps> = ({isDarkMode, userId}) => {
 
     setIsLoading(true);
     try {
-      const goalsCollection = firestore().collection('goals');
-      const querySnapshot = await goalsCollection
-
-        .where('userId', '==', userId) // Replace with actual user ID
-        .get();
-
-      if (!querySnapshot.empty) {
-        // Goal exists, update it
-        const goalDocId = querySnapshot.docs[0].id;
-        await goalsCollection.doc(goalDocId).update({
-          dailyGoal: parseFloat(goalValue),
-          weeklyGoal: parseFloat(weeklyGoalValue),
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-        });
-
-        Alert.alert('Success!', 'Your goal has been updated successfully', [
-          {
-            text: 'OK',
-            onPress: () => {
-              setSelectedDay('');
-              setSelectedActivity('');
-              setGoalValue('');
-              setWeeklyGoalValue('');
-            },
-          },
-        ]);
-      } else {
-        // Goal doesn't exist, create it
-        await goalsCollection.add({
-          selectedDay,
-          selectedActivity,
-          day: new Date(),
-          dailyGoal: parseFloat(goalValue),
-          weeklyGoal: parseFloat(weeklyGoalValue),
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          userId, // Replace with actual user ID
-        });
-
-        Alert.alert('Success!', 'Your goal has been saved successfully', [
-          {
-            text: 'OK',
-            onPress: () => {
-              setSelectedDay('');
-              setSelectedActivity('');
-              setGoalValue('');
-            },
-          },
-        ]);
+      if (!userId) {
+        Alert.alert('Error', 'User ID is missing. Please log in again.');
+        return;
       }
-    } catch (error) {
-      console.error('Error saving/updating goal:', error);
-      Alert.alert('Error', 'Failed to save goal. Please try again.');
+
+      const payload: IGoal = {
+        userId: userId as string,
+        weeklyGoal: parseFloat(weeklyGoalValue),
+        dailyGoal: parseFloat(goalValue),
+      };
+
+      const response = await updateAndCreateGoal(userId, payload);
+
+      if (response && response.success) {
+        showToast({
+          type: 'success',
+          message: response.message,
+        });
+
+        setGoalValue('');
+        setWeeklyGoalValue('');
+        // Alert.alert('Success!', 'Your goal has been updated successfully', [
+        //   {
+        //     text: 'OK',
+        //     onPress: () => {
+        //       // Reset form fields
+        //       setSelectedDay('');
+        //       setSelectedActivity('');
+        //       setGoalValue('');
+        //       setWeeklyGoalValue('');
+        //     },
+        //   },
+        // ]);
+      }
+    } catch (error: any) {
+      showToast({
+        type: 'success',
+        message: error?.message,
+      });
     } finally {
       setIsLoading(false);
     }

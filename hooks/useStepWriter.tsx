@@ -85,7 +85,9 @@ const useStepWriter = (
   );
 
   const syncWithDatabase = useCallback(async () => {
-    if (!user?._id) return;
+    if (!user?._id) {
+      return;
+    }
     const today = new Date();
     const startDate = new Date(today.setHours(0, 0, 0, 0)); // Start of the day
     const endDate = new Date(today.setHours(23, 59, 59, 999)); // End of the day
@@ -104,7 +106,7 @@ const useStepWriter = (
           ...prev,
           steps: stepsData?.steps || prev.steps,
           spendMinutes: stepsData?.spendMinutes || prev.spendMinutes,
-          ...calculateMetrics(stepsData?.steps || prev.steps),
+          ...calculateMetrics(stepsData.steps || prev.steps),
         }));
       }
     } catch (error) {
@@ -112,15 +114,24 @@ const useStepWriter = (
     }
   }, [user, calculateMetrics]);
 
-  const saveToFirestore = useCallback(async () => {
-    if (!user?._id) return;
+  const saveDatabase = useCallback(async () => {
+    if (!user?._id) {
+      return;
+    }
+    const {
+      kilometers,
+      caloriesBurned,
+      walkSessions,
+      avgStepsPerHour,
+      spendMinutes,
+    } = calculateMetrics(newStepCount);
     const payload: ISteps = {
       steps: newStepCount,
-      caloriesBurned: state.caloriesBurned,
-      kilometers: state.kilometers,
-      walkSessions: state.walkSessions,
-      avgStepsPerHour: state.avgStepsPerHour,
-      spendMinutes: state.spendMinutes,
+      caloriesBurned: caloriesBurned || 0,
+      kilometers: kilometers || 0,
+      walkSessions: walkSessions || 0,
+      avgStepsPerHour: avgStepsPerHour || 0,
+      spendMinutes: spendMinutes || 0,
       isGoalReached: false,
       user: user._id,
       date: new Date(),
@@ -158,15 +169,7 @@ const useStepWriter = (
         'Unable to save/update step data. Please try again.',
       );
     }
-  }, [
-    newStepCount,
-    state.avgStepsPerHour,
-    state.caloriesBurned,
-    state.kilometers,
-    state.spendMinutes,
-    state.walkSessions,
-    user,
-  ]);
+  }, [calculateMetrics, newStepCount, user]);
 
   useEffect(() => {
     syncWithDatabase();
@@ -221,8 +224,8 @@ const useStepWriter = (
   }, [activityType, calculateMetrics, state.iGoalReached]);
 
   useEffect(() => {
-    saveToFirestore();
-  }, [saveToFirestore, state.steps]);
+    saveDatabase();
+  }, [saveDatabase, state.steps]);
 
   return state;
 };

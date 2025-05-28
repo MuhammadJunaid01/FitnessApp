@@ -3,12 +3,14 @@ import {
   IForgotVerifyOtpPayload,
   IGenericResponse,
   IGetStepsPayload,
+  IGoal,
   IResetPasswordPayload,
   ISendOtpPayload,
   ISignInPayload,
   ISignUpPayload,
   ISteps,
   IUpdateAppearancePayload,
+  IUpdateProfilePayload,
   IUser,
   IUserPhysicalStats,
   IVerifyOtpPayload,
@@ -24,14 +26,22 @@ export const signup = async (
   );
   return response.data;
 };
-
-export const signin = async (
-  payload: ISignInPayload,
+export const updateProfile = async (
+  userId: string,
+  payload: IUpdateProfilePayload,
 ): Promise<IGenericResponse<IUser>> => {
-  const response = await axiosInstance.post<IGenericResponse<IUser>>(
-    '/auth/signin',
+  const response = await axiosInstance.patch<IGenericResponse<IUser>>(
+    `/auth/update-profile/${userId}`,
     payload,
   );
+  return response.data;
+};
+export const signin = async (
+  payload: ISignInPayload,
+): Promise<IGenericResponse<{token: string; user: IUser}>> => {
+  const response = await axiosInstance.post<
+    IGenericResponse<{token: string; user: IUser}>
+  >('/auth/signin', payload);
   return response.data;
 };
 
@@ -134,5 +144,33 @@ export const updateUserAppearance = async (
   const response = await axiosInstance.patch<
     IGenericResponse<IUserPhysicalStats>
   >(`/user-preferences/stats/${userId}/appearance`, payload);
+  return response.data;
+};
+export const getThemePreference = async (
+  userId: string,
+): Promise<IGenericResponse<'darkMode' | 'lightMode' | undefined>> => {
+  const response = await axiosInstance.get<
+    IGenericResponse<'darkMode' | 'lightMode' | undefined>
+  >(`/user-preferences/stats/${userId}/appearance`);
+  return response.data;
+};
+
+// goals
+export const updateAndCreateGoal = async (
+  userId: string,
+  payload: IGoal,
+): Promise<IGenericResponse<IGoal>> => {
+  const response = await axiosInstance.post<IGenericResponse<IGoal>>(
+    `/goals/${userId}`,
+    payload,
+  );
+  return response.data;
+};
+export const getGoal = async (
+  userId: string,
+): Promise<IGenericResponse<IGoal>> => {
+  const response = await axiosInstance.get<IGenericResponse<IGoal>>(
+    `/goals/${userId}`,
+  );
   return response.data;
 };

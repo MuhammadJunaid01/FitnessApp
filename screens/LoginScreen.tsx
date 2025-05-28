@@ -30,7 +30,7 @@ const {width, height} = Dimensions.get('window');
 type Props = NativeStackScreenProps<any, any>;
 
 const LoginScreen: React.FC<Props> = ({navigation, route}) => {
-  const {setUser, isDark} = useHook();
+  const {setUser, isDark, setToken} = useHook();
   const emailParam = route.params?.email ?? '';
   const passwordParam = route.params?.password ?? '';
   const [email, setEmail] = useState(emailParam);
@@ -70,7 +70,9 @@ const LoginScreen: React.FC<Props> = ({navigation, route}) => {
           type: 'success',
           message: 'Login Successful!',
         });
-        setUser(response.data);
+        console.log('response data', response.data);
+        setUser(response?.data?.user);
+        setToken(response?.data?.token);
         navigation.replace('MainTabs');
       }
     } catch (error: any) {
@@ -548,7 +550,8 @@ const styles = StyleSheet.create({
   },
   signUpContainer: {
     alignItems: 'center',
-    paddingVertical: 16,
+    // paddingVertical: 16,
+    marginBottom: 20,
   },
   signUpText: {
     fontSize: 16,

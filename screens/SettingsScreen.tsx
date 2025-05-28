@@ -6,14 +6,11 @@ import {
   BottomSheetModal,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import auth from '@react-native-firebase/auth';
 
-import firestore from '@react-native-firebase/firestore';
-import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import React, { useCallback, useContext, useRef, useState } from 'react';
+import {useFocusEffect} from '@react-navigation/native';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import React, {useCallback, useRef, useState} from 'react';
 import {
-  Alert,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -26,9 +23,15 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import ActivityHeader from '../components/ActivityHeader';
 import AppearanceSettings from '../components/AppearanceSettings';
 import SelectableComponent from '../components/SelectableComponent';
-import { ThemeContext } from '../hooks/ThemeContext';
-import { activityTypes, genderOptions } from '../lib/data';
-import { getThemePreference } from '../lib/utils/db';
+import {useHook} from '../hooks/ThemeContext';
+import {activityTypes, genderOptions} from '../lib/data';
+import {IUpdateAppearancePayload, IUserPhysicalStats} from '../lib/interfaces';
+import {
+  getThemePreference,
+  updateUserAppearance,
+  upsertUserStats,
+} from '../lib/utils/apis';
+import showToast from '../lib/utils/showToast';
 
 type Props = NativeStackScreenProps<any, any>;
 const SettingsScreen: React.FC<Props> = ({navigation}) => {
@@ -40,13 +43,9 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
   const [gender, setGender] = useState<string | null>(null);
   const [isShowGenderModal, setIsShowGenderModal] = useState(false);
   const [activityType, setActivityType] = useState<string | null>(null);
-  const themeContext = useContext(ThemeContext);
   const ref = useRef<BottomSheetModal>(null);
-  if (!themeContext) {
-    throw new Error('ThemeContext must be used within a ThemeProvider');
-  }
 
-  const {isDark, toggleTheme} = themeContext;
+  const {isDark, toggleTheme, user} = useHook();
 
   useFocusEffect(
     useCallback(() => {
@@ -63,10 +62,14 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
     useCallback(() => {
       let isActive = true;
       const fetchTheme = async () => {
+        if (!user?._id) {
+          return;
+        }
         try {
-          const theme = await getThemePreference();
-          if (isActive && typeof theme === 'boolean') {
-            toggleTheme(theme);
+          const theme = await getThemePreference(user._id);
+          if (isActive && theme) {
+            const isDarkMode = theme?.data === 'darkMode';
+            toggleTheme(isDarkMode);
           }
         } catch (error) {
           console.error('Error fetching theme:', error);
@@ -76,9 +79,8 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
       return () => {
         isActive = false;
       };
-    }, [toggleTheme]),
+    }, [toggleTheme, user]),
   );
-  const userId = auth().currentUser?.uid;
   const theme = {
     backgroundColor: isDark ? '#0a1a3a' : '#ffffff',
     cardColor: isDark ? '#162442' : '#f8fafc',
@@ -88,10 +90,36 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
     inputBg: isDark ? '#162442' : '#ffffff',
   };
   const handleThemeChange = async (isDarkMode: boolean) => {
-    toggleTheme(isDarkMode);
-    await firestore().collection('theme').doc('preference').set({
-      darkMode: isDarkMode,
-    });
+    try {
+      console.log();
+      if (!user?._id) {
+        showToast({
+          type: 'error',
+          message: 'User ID not found:',
+        });
+        return;
+      }
+      toggleTheme(isDarkMode);
+      // await firestore().collection('theme').doc('preference').set({
+      //   darkMode: isDarkMode,
+      // });
+      const payload: IUpdateAppearancePayload = {
+        appearance: isDarkMode ? 'darkMode' : 'lightMode',
+      };
+      const response = await updateUserAppearance(user?._id, payload);
+      console.log('CALLED API');
+      if (response.success) {
+        showToast({
+          type: 'success',
+          message: response.message,
+        });
+      }
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        message: error.message,
+      });
+    }
   };
 
   // Find weekly high
@@ -113,27 +141,52 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
     }
     setIsLoading(true);
     try {
-      await firestore().collection('userPreferences').doc().set({
-        weight,
-        height,
-        age,
-        gender,
-        activityType,
-        userId: userId,
-      });
-      setWeight(0);
-      setHeight(0);
-      setAge(0);
-      setGender(null);
-      setActivityType(null);
-      Alert.alert('Success!', 'Your preferences have been saved successfully', [
-        {
-          text: 'OK',
-          onPress: () => {
-            navigation.navigate('Home');
-          },
-        },
-      ]);
+      if (!user?._id) {
+        showToast({
+          type: 'error',
+          message: 'user id not found.',
+        });
+        return;
+      }
+      const payload: IUserPhysicalStats = {
+        weight: weight,
+        height: height,
+        age: age,
+        gender: gender as any,
+        activityType: 'Slow walking',
+        userId: user?._id as any,
+        appearance: isDark ? 'darkMode' : 'lightMode',
+      };
+      const response = await upsertUserStats(user?._id, payload);
+      if (response.success) {
+        showToast({
+          type: 'success',
+          message: response?.message || '',
+        });
+        setWeight(0);
+        setHeight(0);
+        setAge(0);
+        setGender(null);
+        setActivityType(null);
+        navigation.navigate('Home');
+      }
+      // await firestore().collection('userPreferences').doc().set({
+      //   weight,
+      //   height,
+      //   age,
+      //   gender,
+      //   activityType,
+      //   userId: userId,
+      // });
+
+      // Alert.alert('Success!', 'Your preferences have been saved successfully', [
+      //   {
+      //     text: 'OK',
+      //     onPress: () => {
+      //       navigation.navigate('Home');
+      //     },
+      //   },
+      // ]);
       console.log('User preferences saved');
     } catch (error) {
       console.error('Error saving user preferences:', error);
@@ -358,7 +411,7 @@ const SettingsScreen: React.FC<Props> = ({navigation}) => {
               data={genderOptions}
               selectedVal={gender || ''}
               onSelect={(val: string) => {
-                setGender(val);
+                setGender(val.toLowerCase());
                 setIsShowGenderModal(false);
                 ref.current?.close();
               }}

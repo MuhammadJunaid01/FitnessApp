@@ -14,6 +14,8 @@ interface ThemeContextType {
   toggleTheme: (mode?: boolean) => Promise<void>;
   user: IUser | null;
   setUser: React.Dispatch<React.SetStateAction<IUser | null>>;
+  token: string | null;
+  setToken: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 // Create the context with the defined type
@@ -30,6 +32,7 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
   const [isDark, setIsDark] = useState(false);
   const [user, setUser] = useState<IUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     const loadTheme = async () => {
@@ -46,7 +49,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
   };
 
   return (
-    <ThemeContext.Provider value={{isDark, toggleTheme, user, setUser}}>
+    <ThemeContext.Provider
+      value={{isDark, toggleTheme, user, setUser, token, setToken}}>
       {children}
     </ThemeContext.Provider>
   );
