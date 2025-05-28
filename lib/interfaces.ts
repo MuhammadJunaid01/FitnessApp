@@ -104,7 +104,7 @@ export interface ISteps {
   avgStepsPerHour: number;
   spendMinutes: number;
   isGoalReached: boolean;
-  user: IUser | null;
+  user: IUser | null | string;
   date: Date;
 }
 export interface IGetStepsPayload {

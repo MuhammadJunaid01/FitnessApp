@@ -63,7 +63,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     useStepWriter('Slow walking', goal?.dailyGoal || 0, metricsData);
   // const [stepMetrics, setStepMetrics] = useState<AvgStepsMetrics | null>(null);
   // const navigation = useNavigation();
-  // const [todaySteps, setTodaySteps] = useState<number>(0);
+  const [todaySteps, setTodaySteps] = useState<number>(0);
   const [waterIntake, setWaterIntake] = useState(0);
 
   const theme = isDark ? darkStyles : lightStyles;
@@ -151,8 +151,8 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
         const response = await getStepsByDateRange(payload);
         console.log('response today steps', response);
         if (response.data) {
-          const steps = response.data[response.data?.length - 1]?.steps;
-          setTodaySteps(steps);
+          const stepsVal = response.data[response.data?.length - 1]?.steps;
+          setTodaySteps(stepsVal);
         }
       }
     };
