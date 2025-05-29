@@ -154,7 +154,7 @@ const useStepWriter = (
         'Unable to save/update step data. Please try again.',
       );
     }
-  }, [calculateMetrics, newStepCount, user]);
+  }, [calculateMetrics, checkDevice, newStepCount, user]);
 
   useEffect(() => {
     syncWithDatabase();
