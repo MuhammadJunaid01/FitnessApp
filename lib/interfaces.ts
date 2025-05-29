@@ -83,7 +83,7 @@ export interface IResetPasswordPayload {
 }
 
 export interface ISendOtpPayload {
-  phone: string;
+  email: string;
 }
 
 export interface IVerifyOtpPayload {

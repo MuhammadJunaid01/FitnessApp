@@ -87,7 +87,9 @@ const useStepWriter = (
   );
 
   const syncWithDatabase = useCallback(async () => {
-    if (!user?._id) return;
+    if (!user?._id) {
+      return;
+    }
 
     const today = new Date();
     const startDate = new Date(today.setHours(0, 0, 0, 0));
@@ -115,7 +117,9 @@ const useStepWriter = (
   }, [user, calculateMetrics]);
 
   const saveDatabase = useCallback(async () => {
-    if (!user?._id || newStepCount === 0) return;
+    if (!user?._id || newStepCount === 0) {
+      return;
+    }
 
     const {kilometers, caloriesBurned, avgStepsPerHour, spendMinutes} =
       calculateMetrics(newStepCount);
@@ -160,7 +164,9 @@ const useStepWriter = (
   }, [dailyGoal, state.steps]);
 
   useEffect(() => {
-    if (state.iGoalReached) return;
+    if (state.iGoalReached) {
+      return;
+    }
 
     sessionStartTimeRef.current = Date.now();
     const subscription = accelerometer.subscribe(({x, y, z}) => {

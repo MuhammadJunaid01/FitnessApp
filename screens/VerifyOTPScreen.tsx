@@ -18,7 +18,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useHook} from '../hooks/ThemeContext';
 import {IForgotVerifyOtpPayload} from '../lib/interfaces';
-import {verifyForgotPasswordOtp, verifyOtp} from '../lib/utils/apis';
+import {sendOtp, verifyForgotPasswordOtp, verifyOtp} from '../lib/utils/apis';
 import showToast from '../lib/utils/showToast';
 
 type Props = NativeStackScreenProps<any, any>;
@@ -167,6 +167,16 @@ const VerifyOTPScreen: React.FC<Props> = ({route, navigation}) => {
   const handleResendOTP = async () => {
     try {
       setIsLoading(true);
+      const response = await sendOtp({email});
+      console.log('CALL RSEND');
+      if (!response.success) {
+        Alert.alert('Error', response.message);
+        return;
+      }
+      showToast({
+        type: 'success',
+        message: response.message,
+      });
       setTimeLeft(OTP_EXPIRY_MINUTES * 60);
       Alert.alert('Success', 'A new verification code has been sent');
     } catch (error: any) {

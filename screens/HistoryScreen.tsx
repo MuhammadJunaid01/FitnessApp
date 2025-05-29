@@ -36,10 +36,6 @@ const HistoryScreen = () => {
     useCallback(() => {
       StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
       StatusBar.setBackgroundColor(isDark ? '#0a1a3a' : '#FFFFFF');
-      return () => {
-        StatusBar.setBarStyle('default');
-        StatusBar.setBackgroundColor('#FFFFFF');
-      };
     }, [isDark]),
   );
   useEffect(() => {
