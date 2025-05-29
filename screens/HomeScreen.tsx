@@ -1,36 +1,33 @@
 /* eslint-disable react-native/no-inline-styles */
 import {useFocusEffect} from '@react-navigation/native';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {NativeStackScreenProps} from '@react-navigation/native-stack';
+import React from 'react';
 import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
   ScrollView,
   Share,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-// import { auth } from "../firebase.client";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import React from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import CheckPresencesGoal from '../components/CheckPresencesGoal';
 import StatCard from '../components/StatCard';
 import StepProgressCircle from '../components/StepProgressCircle';
 import {useHook} from '../hooks/ThemeContext';
 import useStepWriter, {ICalculate} from '../hooks/useStepWriter';
-import {IGetStepsPayload} from '../lib/interfaces';
 import {
   calculateDailyStepPercentage,
   hasIncompleteGoals,
   hasIncompletePresences,
 } from '../lib/utils';
-import {getGoal, getStepsByDateRange, getUserStats} from '../lib/utils/apis';
+import {getGoal, getUserStats} from '../lib/utils/apis';
 
 type Props = NativeStackScreenProps<any, any>;
 const HomeScreen: React.FC<Props> = ({navigation}) => {
@@ -155,7 +152,15 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     // Optional: Show a small confirmation message
     Alert.alert('Water Added', '250ml of water added to your daily intake!');
   }, [waterIntake]);
-
+  const getWaterIntake = async (): Promise<number | null> => {
+    try {
+      const value = await AsyncStorage.getItem('waterIntake');
+      return value !== null ? parseInt(value, 10) : null;
+    } catch (error) {
+      console.error('Error retrieving water intake:', error);
+      return null;
+    }
+  };
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -164,6 +169,10 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           return;
         }
         try {
+          const waterIntakeValue = await getWaterIntake();
+          if (isActive && waterIntakeValue !== null) {
+            setWaterIntake(waterIntakeValue);
+          }
           const themeData = await getUserStats(user._id);
           if (isActive && typeof themeData === 'boolean') {
             toggleTheme(themeData);
@@ -250,7 +259,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           />
           <StatCard
             label="MINUTES"
-            value={spendMinutes?.toFixed(5) ?? '0.00'}
+            value={spendMinutes?.toFixed(2) ?? '0.00'}
             iconName="timer-outline"
             isDarkMode={isDark}
             iconColor={isDark ? '#fff' : '#ff7f50'}

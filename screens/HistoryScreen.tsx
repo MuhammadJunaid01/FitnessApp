@@ -1,9 +1,7 @@
-/* eslint-disable no-catch-shadow */
 /* eslint-disable react-native/no-inline-styles */
 // import auth from '@react-native-firebase/auth';
 import React, {useEffect, useRef, useState} from 'react';
 
-// import firestore from '@react-native-firebase/firestore';
 import {ActivityIndicator, StyleSheet, View} from 'react-native';
 import PagerView from 'react-native-pager-view';
 import DailyStepsChart from '../components/DailyStepsChart';
@@ -30,12 +28,6 @@ const HistoryScreen = () => {
     pagerRef.current?.setPage(index);
   };
 
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
-  //     StatusBar.setBackgroundColor(isDark ? '#0a1a3a' : '#FFFFFF');
-  //   }, [isDark]),
-  // );
   useEffect(() => {
     const fetchStepData = async () => {
       try {

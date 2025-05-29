@@ -1,5 +1,4 @@
 /* eslint-disable react-native/no-inline-styles */
-/* eslint-disable react/no-unstable-nested-components */
 
 import {useNavigation} from '@react-navigation/native';
 import React, {useState} from 'react';

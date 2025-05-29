@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-shadow */
+/* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react/no-unstable-nested-components */
 // import { Ionicons } from "@expo/vector-icons";
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
