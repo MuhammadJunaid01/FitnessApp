@@ -25,8 +25,8 @@ interface StepTrackerState {
 const ACTIVITY_CONFIG = {
   'Slow walking': {
     threshold: 10.5,
-    stepLengthFactor: 0.35, // Step length factor relative to height
-    met: 3.0, // Metabolic equivalent
+    stepLengthFactor: 0.35,
+    met: 3.0,
   },
   'Brisk walking': {
     threshold: 11.5,
@@ -45,7 +45,7 @@ const ACTIVITY_CONFIG = {
   },
 };
 
-const WINDOW_SIZE = 10; // Sliding window size for smoothing
+const WINDOW_SIZE = 10;
 
 const useStepWriter = (
   activityType: ActivityDataType = 'Brisk walking',
@@ -66,14 +66,16 @@ const useStepWriter = (
   const accelDataRef = useRef<number[]>([]);
   const sessionStartTimeRef = useRef<number | null>(null);
   const {user} = useHook();
+  const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
   const calculateMetrics = useCallback(
     (steps: number): Partial<StepTrackerState> => {
       const {height, weight, walkType} = calculate;
       const {stepLengthFactor, met} = ACTIVITY_CONFIG[walkType];
 
-      const stepLength = (height * stepLengthFactor) / 100; // Convert cm to meters
-      const kilometers = (steps * stepLength) / 1000; // Convert meters to kilometers
-      const caloriesBurned = ((met * 3.5 * weight) / 200) * (steps / 120); // Based on walking duration at 2 steps/sec
+      const stepLength = (height * stepLengthFactor) / 100;
+      const kilometers = (steps * stepLength) / 1000;
+      const caloriesBurned = ((met * 3.5 * weight) / 200) * (steps / 120);
 
       return {
         kilometers,
@@ -85,23 +87,21 @@ const useStepWriter = (
   );
 
   const syncWithDatabase = useCallback(async () => {
-    if (!user?._id) {
-      return;
-    }
+    if (!user?._id) return;
+
     const today = new Date();
-    const startDate = new Date(today.setHours(0, 0, 0, 0)); // Start of the day
-    const endDate = new Date(today.setHours(23, 59, 59, 999)); // End of the day
+    const startDate = new Date(today.setHours(0, 0, 0, 0));
+    const endDate = new Date(today.setHours(23, 59, 59, 999));
 
     try {
       const payload: IGetStepsPayload = {
         userId: user._id,
-        startDate: startDate.toISOString(), // Convert to string
-        endDate: endDate.toISOString(), // Convert to string
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
       };
       const response = await getStepsByDateRange(payload);
       if (response.success && response.data) {
         const stepsData = response.data[response.data.length - 1];
-
         setState(prev => ({
           ...prev,
           steps: stepsData?.steps || prev.steps,
@@ -115,53 +115,28 @@ const useStepWriter = (
   }, [user, calculateMetrics]);
 
   const saveDatabase = useCallback(async () => {
-    if (!user?._id) {
-      return;
-    }
-    const {
-      kilometers,
-      caloriesBurned,
-      walkSessions,
-      avgStepsPerHour,
-      spendMinutes,
-    } = calculateMetrics(newStepCount);
+    if (!user?._id || newStepCount === 0) return;
+
+    const {kilometers, caloriesBurned, avgStepsPerHour, spendMinutes} =
+      calculateMetrics(newStepCount);
+
     const payload: ISteps = {
       steps: newStepCount,
       caloriesBurned: caloriesBurned || 0,
       kilometers: kilometers || 0,
-      walkSessions: walkSessions || 0,
       avgStepsPerHour: avgStepsPerHour || 0,
       spendMinutes: spendMinutes || 0,
       isGoalReached: false,
       user: user._id,
       date: new Date(),
+      walkSessions: 0,
     };
-    // const docRef = firestore().collection('stepData').doc(userCurrent.uid);
-    // const todayKey = moment().format('YYYY-MM-DD');
 
     try {
       const response = await createOrUpdateSteps(payload);
       if (response.success) {
         setNewStepCount(0);
       }
-      // await docRef.set(
-      //   {
-      //     dailySteps: {
-      //       [todayKey]: {
-      //         step: state.steps,
-      //         caloriesBurn: state.caloriesBurned,
-      //         kilometers: state.kilometers,
-      //         minutes: state.spendMinutes,
-      //         walkSessions: state.walkSessions,
-      //         userId: userCurrent.uid,
-      //         date: new Date().toISOString(),
-      //       },
-      //     },
-      //     totalSteps: firestore.FieldValue.increment(newStepCount),
-      //     lastUpdated: firestore.FieldValue.serverTimestamp(),
-      //   },
-      //   {merge: true},
-      // );
     } catch (error) {
       console.error('Error saving data to Firebase:', error);
       Alert.alert(
@@ -185,9 +160,7 @@ const useStepWriter = (
   }, [dailyGoal, state.steps]);
 
   useEffect(() => {
-    if (state.iGoalReached) {
-      return;
-    }
+    if (state.iGoalReached) return;
 
     sessionStartTimeRef.current = Date.now();
     const subscription = accelerometer.subscribe(({x, y, z}) => {
@@ -206,7 +179,7 @@ const useStepWriter = (
           avgMagnitude > threshold &&
           currentTime - lastStepTimeRef.current > 300
         ) {
-          setNewStepCount(1);
+          setNewStepCount(count => count + 1);
           setState(prev => {
             const newSteps = prev.steps + 1;
             return {
@@ -224,8 +197,14 @@ const useStepWriter = (
   }, [activityType, calculateMetrics, state.iGoalReached]);
 
   useEffect(() => {
-    saveDatabase();
-  }, [saveDatabase, state.steps]);
+    if (saveDebounceRef.current) {
+      clearTimeout(saveDebounceRef.current);
+    }
+
+    saveDebounceRef.current = setTimeout(() => {
+      saveDatabase();
+    }, 2000);
+  }, [newStepCount, saveDatabase]);
 
   return state;
 };

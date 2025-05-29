@@ -2,12 +2,13 @@
 // import { Ionicons } from "@expo/vector-icons";
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {NavigationContainer} from '@react-navigation/native';
+import {NavigationContainer, useRoute} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import React from 'react';
+import React, {useMemo} from 'react';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {ThemeProvider} from './hooks/ThemeContext';
+import {ThemeProvider, useHook} from './hooks/ThemeContext';
+import {hasIncompleteGoals, hasIncompletePresences} from './lib/utils';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import HomeScreen from './screens/HomeScreen';
@@ -23,6 +24,20 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
+  const {goal, userPreferences} = useHook();
+  const isGoalSet = useMemo(() => {
+    return hasIncompleteGoals(goal as any);
+  }, [goal]);
+  const isSetUserPreferences = useMemo(() => {
+    return hasIncompletePresences(userPreferences as any);
+  }, [userPreferences]);
+  const route = useRoute();
+  console.log('route name', route.name);
+  console.log('isSetUserPreferences', isSetUserPreferences);
+  console.log('isGoalSet', isGoalSet);
+  const shouldHideTabBar =
+    route.name === 'MainTabs' && (isGoalSet || isSetUserPreferences);
+
   return (
     <Tab.Navigator
       screenOptions={({route}) => ({
@@ -34,6 +49,7 @@ function MainTabs() {
         },
         tabBarActiveTintColor: '#4caf50',
         tabBarInactiveTintColor: 'gray',
+        tabBarStyle: shouldHideTabBar ? {display: 'none'} : {}, // Hide tab bar
       })}>
       <Tab.Screen
         name="Home"

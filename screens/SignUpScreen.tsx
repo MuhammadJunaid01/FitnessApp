@@ -40,7 +40,7 @@ export default function SignUpScreen({navigation}: SignUpScreenNavigationProp) {
         password: password,
       });
       if (response.success) {
-        navigation.replace('Login', {email, password});
+        navigation.replace('VerifyOTP', {email, isVerifyEmail: true});
         showToast({
           type: 'success',
           message: 'Sign Up Successful! Please Login.',
@@ -104,6 +104,7 @@ export default function SignUpScreen({navigation}: SignUpScreenNavigationProp) {
             value={name}
             onChangeText={setName}
             placeholderTextColor={theme.inputPlaceholder}
+            autoCapitalize="none"
           />
         </View>
 
@@ -149,6 +150,9 @@ export default function SignUpScreen({navigation}: SignUpScreenNavigationProp) {
             secureTextEntry={!isPasswordVisible}
             onChangeText={setPassword}
             placeholderTextColor={theme.inputPlaceholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="password"
           />
           <TouchableOpacity
             onPress={togglePasswordVisibility}

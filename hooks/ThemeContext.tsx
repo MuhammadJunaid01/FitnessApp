@@ -6,7 +6,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import {IGoal, IUser} from '../lib/interfaces';
+import {IGoal, IUser, IUserPhysicalStats} from '../lib/interfaces';
 
 // Define the shape of the context
 interface ThemeContextType {
@@ -18,6 +18,10 @@ interface ThemeContextType {
   setToken: React.Dispatch<React.SetStateAction<string | null>>;
   goal: IGoal | null;
   setGoal: React.Dispatch<React.SetStateAction<IGoal | null>>;
+  userPreferences: IUserPhysicalStats | null;
+  setUserPreferences: React.Dispatch<
+    React.SetStateAction<IUserPhysicalStats | null>
+  >;
 }
 
 // Create the context with the defined type
@@ -36,7 +40,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
   const [user, setUser] = useState<IUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [goal, setGoal] = useState<IGoal | null>(null);
-
+  const [userPreferences, setUserPreferences] =
+    useState<IUserPhysicalStats | null>(null);
   useEffect(() => {
     const loadTheme = async () => {
       const saved = await AsyncStorage.getItem('darkMode');
@@ -62,6 +67,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
         setToken,
         goal,
         setGoal,
+        userPreferences,
+        setUserPreferences,
       }}>
       {children}
     </ThemeContext.Provider>

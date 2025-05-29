@@ -1,6 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react/no-unstable-nested-components */
 
+import {useNavigation} from '@react-navigation/native';
 import React, {useState} from 'react';
 import {
   Alert,
@@ -14,6 +15,7 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {useHook} from '../hooks/ThemeContext';
 import {IGoal} from '../lib/interfaces';
 import {updateAndCreateGoal} from '../lib/utils/apis';
 import showToast from '../lib/utils/showToast';
@@ -51,8 +53,14 @@ interface SetGoalProps {
 
 const SetGoal: React.FC<SetGoalProps> = ({isDarkMode, userId}) => {
   console.log('userId', userId);
-  const [goalValue, setGoalValue] = useState<string>('');
-  const [weeklyGoalValue, setWeeklyGoalValue] = useState<string>('');
+  const {goal} = useHook();
+  const navigation = useNavigation<any>();
+  const [goalValue, setGoalValue] = useState<string>(
+    goal?.dailyGoal?.toString() || '',
+  );
+  const [weeklyGoalValue, setWeeklyGoalValue] = useState<string>(
+    goal?.weeklyGoal?.toString() || '',
+  );
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -91,7 +99,7 @@ const SetGoal: React.FC<SetGoalProps> = ({isDarkMode, userId}) => {
           type: 'success',
           message: response.message,
         });
-
+        navigation.navigate('MainTabs');
         setGoalValue('');
         setWeeklyGoalValue('');
         // Alert.alert('Success!', 'Your goal has been updated successfully', [

@@ -1,5 +1,10 @@
 import moment from 'moment';
-import {DateRange, WeeklyDateRange} from '../interfaces';
+import {
+  DateRange,
+  IGoal,
+  IUserPhysicalStats,
+  WeeklyDateRange,
+} from '../interfaces';
 
 interface InputData {
   dateTime: string; // ISO date string
@@ -55,4 +60,27 @@ export const getWeeklyDateRange = (): WeeklyDateRange => {
   const endOfWeek = moment().endOf('week').toISOString(); // End of the week
 
   return {startOfWeek, endOfWeek};
+};
+export const hasIncompletePresences = (
+  presences: IUserPhysicalStats,
+): boolean => {
+  return (
+    !presences?.weight ||
+    presences?.weight === 0 ||
+    !presences?.height ||
+    presences?.height === 0 ||
+    !presences?.age ||
+    presences?.age === 0 ||
+    !presences?.gender ||
+    !presences?.activityType
+  );
+};
+
+export const hasIncompleteGoals = (goal: IGoal): boolean => {
+  return (
+    !goal?.weeklyGoal ||
+    goal?.weeklyGoal === 0 ||
+    !goal?.dailyGoal ||
+    goal?.dailyGoal === 0
+  );
 };

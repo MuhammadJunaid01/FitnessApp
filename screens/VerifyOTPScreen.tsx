@@ -18,14 +18,15 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useHook} from '../hooks/ThemeContext';
 import {IForgotVerifyOtpPayload} from '../lib/interfaces';
-import {verifyForgotPasswordOtp} from '../lib/utils/apis';
+import {verifyForgotPasswordOtp, verifyOtp} from '../lib/utils/apis';
+import showToast from '../lib/utils/showToast';
 
 type Props = NativeStackScreenProps<any, any>;
 const OTP_EXPIRY_MINUTES = 10;
 const VerifyOTPScreen: React.FC<Props> = ({route, navigation}) => {
   const {isDark} = useHook();
   const email = route?.params?.email ?? '';
-
+  const isVerifyEmail = route.params?.isVerifyEmail;
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(OTP_EXPIRY_MINUTES * 60); // 10 minutes in seconds
@@ -109,9 +110,20 @@ const VerifyOTPScreen: React.FC<Props> = ({route, navigation}) => {
         email,
         otp: otp.join(''),
       };
-      const response = await verifyForgotPasswordOtp(payload);
+      const response = isVerifyEmail
+        ? await verifyOtp(payload)
+        : await verifyForgotPasswordOtp(payload);
       if (response.success) {
-        navigation.navigate('setNewPassword', {token: response.data, email});
+        showToast({
+          type: 'success',
+          message: response.message,
+        });
+        if (!isVerifyEmail) {
+          navigation.navigate('setNewPassword', {token: response.data, email});
+          return;
+        }
+        navigation.navigate('Login');
+        return;
       }
       setShowPasswordFields(true);
     } catch (error: any) {

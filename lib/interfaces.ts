@@ -87,7 +87,7 @@ export interface ISendOtpPayload {
 }
 
 export interface IVerifyOtpPayload {
-  phone: string;
+  email: string;
   otp: string;
 }
 
@@ -114,6 +114,12 @@ export interface IGetStepsPayload {
   endDate: string;
 }
 
+export interface ICheckPresencesGoal {
+  presences: IUserPhysicalStats;
+  isDark: boolean;
+  goal: IGoal;
+  navigation: string;
+}
 export interface IUserPhysicalStats {
   weight: number; // Weight in kilograms
   height: number; // Height in centimeters

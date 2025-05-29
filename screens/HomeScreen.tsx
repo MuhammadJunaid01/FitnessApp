@@ -18,23 +18,36 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import React from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import CheckPresencesGoal from '../components/CheckPresencesGoal';
 import StatCard from '../components/StatCard';
 import StepProgressCircle from '../components/StepProgressCircle';
 import {useHook} from '../hooks/ThemeContext';
 import useStepWriter, {ICalculate} from '../hooks/useStepWriter';
-import {IGetStepsPayload, IGoal, IUserPhysicalStats} from '../lib/interfaces';
-import {calculateDailyStepPercentage} from '../lib/utils';
+import {IGetStepsPayload} from '../lib/interfaces';
+import {
+  calculateDailyStepPercentage,
+  hasIncompleteGoals,
+  hasIncompletePresences,
+} from '../lib/utils';
 import {getGoal, getStepsByDateRange, getUserStats} from '../lib/utils/apis';
 
 type Props = NativeStackScreenProps<any, any>;
 const HomeScreen: React.FC<Props> = ({navigation}) => {
-  // const {saveSteps} = useHealthConnectSteps();
-  // const {stepCount: steps} = useStepCounter();
-  // const {dailySteps, requestPermission} = useHealthData();
-  const {isDark, toggleTheme, user, goal, setGoal} = useHook();
+  const [isGoalLoading, setIsGoalLoading] = useState(false);
+  const [isSetUserPreferencesLoading, setIsSetUserPreferencesLoading] =
+    useState(false);
+
+  const {
+    isDark,
+    toggleTheme,
+    user,
+    goal,
+    setGoal,
+    userPreferences,
+    setUserPreferences,
+  } = useHook();
   // const [goal, setGoal] = useState<IGoal | null>(null);
-  const [userPreferences, setUserPreferences] =
-    useState<IUserPhysicalStats | null>(null);
+
   const metricsData: ICalculate = useMemo(() => {
     const defaults: ICalculate = {
       weight: 0,
@@ -59,24 +72,16 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     useStepWriter('Slow walking', goal?.dailyGoal || 0, metricsData);
   // const [stepMetrics, setStepMetrics] = useState<AvgStepsMetrics | null>(null);
   // const navigation = useNavigation();
-  const [todaySteps, setTodaySteps] = useState<number>(0);
   const [waterIntake, setWaterIntake] = useState(0);
 
   const theme = isDark ? darkStyles : lightStyles;
 
-  // useEffect(() => {
-  //   requestPermission();
-  // }, [requestPermission]);
-  // useEffect(()=> {
-  //   if (userCurrent?.uid) {
-
-  //   }
-  // },[steps, newStepCount, setNewStepCount, userCurrent])
   useFocusEffect(
     useCallback(() => {
       let isActive = true; // Helps in preventing state updates after unmount
 
       const fetchData = async () => {
+        setIsSetUserPreferencesLoading(true);
         try {
           if (user && user._id) {
             const stats = await getUserStats(user._id);
@@ -86,7 +91,10 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
               // Optional: Update state or perform any action with the fetched data
             }
           }
-        } catch (error) {}
+        } catch (error) {
+        } finally {
+          setIsSetUserPreferencesLoading(false);
+        }
       };
 
       fetchData();
@@ -94,44 +102,28 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       return () => {
         isActive = false; // Cleanup function to avoid state updates after unmount
       };
-    }, [user]),
+    }, [setUserPreferences, user]),
   );
-  // Calculate metrics whenever userPreferences changes
-  // useEffect(() => {
-  //   if (userPreferences) {
-  //     const {gender, height, weight, activityType} = userPreferences;
-  //     const validActivityTypes = [
-  //       'Slow walking',
-  //       'Brisk walking',
-  //       'Jogging',
-  //       'Running',
-  //     ] as const;
 
-  //     const safeActivityType = validActivityTypes.includes(activityType as any)
-  //       ? (activityType as (typeof validActivityTypes)[number])
-  //       : 'Slow walking';
+  useFocusEffect(
+    useCallback(() => {
+      const getGoalByUserId = async () => {
+        if (user?._id) {
+          setIsGoalLoading(true);
+          try {
+            const goalData = await getGoal(user._id);
+            setGoal(goalData.data);
+          } catch (error) {
+            console.error('Error fetching goal:', error);
+          } finally {
+            setIsGoalLoading(false);
+          }
+        }
+      };
 
-  //     const metrics = calculateWalkMetrics(
-  //       weight,
-  //       gender as 'male' | 'female',
-  //       height,
-  //       safeActivityType,
-  //     );
-
-  //     if (metrics) {
-  //       setStepMetrics(metrics);
-  //     }
-  //   }
-  // }, [calculateWalkMetrics, userCurrent, userPreferences, steps]);
-  useEffect(() => {
-    const getGoalByUserId = async () => {
-      if (user?._id) {
-        const goalData = await getGoal(user._id);
-        setGoal(goalData.data);
-      }
-    };
-    getGoalByUserId();
-  }, [setGoal, user]);
+      getGoalByUserId();
+    }, [user, setGoal]),
+  );
   useEffect(() => {
     const fetchDailyStepData = async () => {
       if (user?._id) {
@@ -148,7 +140,6 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
         console.log('response today steps', response);
         if (response.data) {
           const stepsVal = response.data[response.data?.length - 1]?.steps;
-          setTodaySteps(stepsVal);
         }
       }
     };
@@ -257,6 +248,22 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       };
     }, [toggleTheme, user]),
   );
+  if (isGoalLoading || isSetUserPreferencesLoading) {
+    return <Text>Loading...</Text>;
+  }
+  if (
+    hasIncompletePresences(userPreferences as any) ||
+    hasIncompleteGoals(goal as any)
+  ) {
+    return (
+      <CheckPresencesGoal
+        navigation={navigation}
+        presences={userPreferences as any}
+        goal={goal as any}
+        isDark={isDark}
+      />
+    );
+  }
   return (
     <SafeAreaView style={theme.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
