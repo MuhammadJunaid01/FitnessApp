@@ -1,4 +1,7 @@
 import moment from 'moment';
+import DeviceInfo from 'react-native-device-info';
+
+import {Platform} from 'react-native';
 import {
   DateRange,
   IGoal,
@@ -84,3 +87,15 @@ export const hasIncompleteGoals = (goal: IGoal): boolean => {
     goal?.dailyGoal === 0
   );
 };
+export async function isIOSVirtualDevice(): Promise<boolean> {
+  if (Platform.OS !== 'ios') {
+    return false;
+  }
+  try {
+    const isEmulator = await DeviceInfo.isEmulator();
+    return isEmulator;
+  } catch (error) {
+    console.error('Error checking emulator status:', error);
+    return false;
+  }
+}

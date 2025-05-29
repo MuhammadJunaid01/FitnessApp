@@ -2,6 +2,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {Alert} from 'react-native';
 import {accelerometer} from 'react-native-sensors';
 import {ActivityDataType, IGetStepsPayload, ISteps} from '../lib/interfaces';
+import {isIOSVirtualDevice} from '../lib/utils';
 import {createOrUpdateSteps, getStepsByDateRange} from '../lib/utils/apis';
 import {useHook} from './ThemeContext';
 
@@ -64,10 +65,12 @@ const useStepWriter = (
   const [newStepCount, setNewStepCount] = useState(0);
   const lastStepTimeRef = useRef<number>(0);
   const accelDataRef = useRef<number[]>([]);
-  const sessionStartTimeRef = useRef<number | null>(null);
   const {user} = useHook();
   const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
-
+  const checkDevice = useCallback(async () => {
+    const val = await isIOSVirtualDevice();
+    return val;
+  }, []);
   const calculateMetrics = useCallback(
     (steps: number): Partial<StepTrackerState> => {
       const {height, weight, walkType} = calculate;
@@ -120,7 +123,10 @@ const useStepWriter = (
     if (!user?._id || newStepCount === 0) {
       return;
     }
-
+    const checkIOSVirtualDevice = await checkDevice();
+    if (checkIOSVirtualDevice) {
+      return;
+    }
     const {kilometers, caloriesBurned, avgStepsPerHour, spendMinutes} =
       calculateMetrics(newStepCount);
 
@@ -168,7 +174,12 @@ const useStepWriter = (
       return;
     }
 
-    sessionStartTimeRef.current = Date.now();
+    checkDevice().then(isVirtual => {
+      if (isVirtual) {
+        return;
+        // handle virtual device logic here if needed
+      }
+    });
     const subscription = accelerometer.subscribe(({x, y, z}) => {
       const magnitude = Math.sqrt(x ** 2 + y ** 2 + z ** 2);
       accelDataRef.current = [...accelDataRef.current, magnitude].slice(
@@ -200,7 +211,7 @@ const useStepWriter = (
     });
 
     return () => subscription.unsubscribe();
-  }, [activityType, calculateMetrics, state.iGoalReached]);
+  }, [activityType, calculateMetrics, checkDevice, state.iGoalReached]);
 
   useEffect(() => {
     if (saveDebounceRef.current) {
