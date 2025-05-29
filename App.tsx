@@ -53,12 +53,16 @@ function MainTabs() {
       screenOptions={({route}) => ({
         tabBarIcon: ({color, size}) => {
           let iconName = 'home';
-          if (route.name === 'Profile') iconName = 'person';
-          if (route.name === 'Settings') iconName = 'settings';
+          if (route.name === 'Profile') {
+            iconName = 'person';
+          }
+          if (route.name === 'Settings') {
+            iconName = 'settings';
+          }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#4caf50',
-        tabBarInactiveTintColor: 'gray',
+        tabBarInactiveTintColor: 'white',
         tabBarStyle: {
           display: shouldHideTabBar ? 'none' : 'flex',
           backgroundColor: isDark ? '#0a1a3a' : '#ffffff', // Dynamic background color
