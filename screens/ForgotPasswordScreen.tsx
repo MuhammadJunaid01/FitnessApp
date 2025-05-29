@@ -1,9 +1,7 @@
-import {useFocusEffect} from '@react-navigation/native';
-import React, {useCallback, useState} from 'react';
+import React, {useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -86,18 +84,6 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenNavigationProp> = ({
     buttonBackground: isDark ? '#ffffff' : '#4caf50',
     buttonText: isDark ? '#0a1a3a' : '#ffffff',
   };
-
-  useFocusEffect(
-    useCallback(() => {
-      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
-      StatusBar.setBackgroundColor(theme.background);
-
-      return () => {
-        StatusBar.setBarStyle('default');
-        StatusBar.setBackgroundColor('#FFFFFF');
-      };
-    }, [isDark, theme.background]),
-  );
 
   return (
     <View style={[styles.container, {backgroundColor: theme.background}]}>

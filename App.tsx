@@ -2,9 +2,14 @@
 // import { Ionicons } from "@expo/vector-icons";
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {NavigationContainer, useRoute} from '@react-navigation/native';
+import {
+  NavigationContainer,
+  useFocusEffect,
+  useRoute,
+} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import React, {useMemo} from 'react';
+import React, {useCallback, useMemo} from 'react';
+import {StatusBar} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {ThemeProvider, useHook} from './hooks/ThemeContext';
@@ -24,7 +29,7 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
-  const {goal, userPreferences} = useHook();
+  const {goal, userPreferences, isDark} = useHook();
   const isGoalSet = useMemo(() => {
     return hasIncompleteGoals(goal as any);
   }, [goal]);
@@ -37,7 +42,12 @@ function MainTabs() {
   console.log('isGoalSet', isGoalSet);
   const shouldHideTabBar =
     route.name === 'MainTabs' && (isGoalSet || isSetUserPreferences);
-
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
+      StatusBar.setBackgroundColor('#0a1a3a');
+    }, [isDark]),
+  );
   return (
     <Tab.Navigator
       screenOptions={({route}) => ({
@@ -49,7 +59,10 @@ function MainTabs() {
         },
         tabBarActiveTintColor: '#4caf50',
         tabBarInactiveTintColor: 'gray',
-        tabBarStyle: shouldHideTabBar ? {display: 'none'} : {}, // Hide tab bar
+        tabBarStyle: {
+          display: shouldHideTabBar ? 'none' : 'flex',
+          backgroundColor: isDark ? '#0a1a3a' : '#ffffff', // Dynamic background color
+        },
       })}>
       <Tab.Screen
         name="Home"

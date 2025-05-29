@@ -1,11 +1,10 @@
 /* eslint-disable no-catch-shadow */
 /* eslint-disable react-native/no-inline-styles */
 // import auth from '@react-native-firebase/auth';
-import {useFocusEffect} from '@react-navigation/native';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 
 // import firestore from '@react-native-firebase/firestore';
-import {ActivityIndicator, StatusBar, StyleSheet, View} from 'react-native';
+import {ActivityIndicator, StyleSheet, View} from 'react-native';
 import PagerView from 'react-native-pager-view';
 import DailyStepsChart from '../components/DailyStepsChart';
 import SelectableTabs from '../components/SelectableTabs';
@@ -21,8 +20,7 @@ const HistoryScreen = () => {
   const [weeklyStepData, setWeeklyStepData] = useState<ISteps[] | null>(null);
   const tabs = ['Day', 'Week'];
 
-  const [isShowStepsData, setIsShowStepsData] = useState(true);
-  const {isDark, user, goal, setGoal} = useHook();
+  const {isDark, user} = useHook();
   // const [isShowCaloriesData, setIsShowCaloriesData] = useState(false);
   const [activeTabIndex, setActiveTabIndex] = useState(1);
   const pagerRef = useRef<PagerView>(null);
@@ -32,12 +30,12 @@ const HistoryScreen = () => {
     pagerRef.current?.setPage(index);
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
-      StatusBar.setBackgroundColor(isDark ? '#0a1a3a' : '#FFFFFF');
-    }, [isDark]),
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
+  //     StatusBar.setBackgroundColor(isDark ? '#0a1a3a' : '#FFFFFF');
+  //   }, [isDark]),
+  // );
   useEffect(() => {
     const fetchStepData = async () => {
       try {
@@ -103,14 +101,12 @@ const HistoryScreen = () => {
             )}
           </View>
           <View key="2" style={styles.page}>
-            {isShowStepsData
-              ? weeklyStepData && (
-                  <WeeklyStepsChart
-                    fitnessData={weeklyStepData}
-                    isDarkMode={isDark}
-                  />
-                )
-              : null}
+            {weeklyStepData ? (
+              <WeeklyStepsChart
+                fitnessData={weeklyStepData}
+                isDarkMode={isDark}
+              />
+            ) : null}
           </View>
         </PagerView>
       )}

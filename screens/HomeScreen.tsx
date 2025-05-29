@@ -3,6 +3,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 
 import {
+  ActivityIndicator,
   Alert,
   SafeAreaView,
   ScrollView,
@@ -124,59 +125,14 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       getGoalByUserId();
     }, [user, setGoal]),
   );
-  useEffect(() => {
-    const fetchDailyStepData = async () => {
-      if (user?._id) {
-        const today = new Date();
-        const startDate = new Date(today.setHours(0, 0, 0, 0)); // Start of the day
-        const endDate = new Date(today.setHours(23, 59, 59, 999)); // End of the day
 
-        const payload: IGetStepsPayload = {
-          userId: user._id,
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-        };
-        const response = await getStepsByDateRange(payload);
-        console.log('response today steps', response);
-        if (response.data) {
-          const stepsVal = response.data[response.data?.length - 1]?.steps;
-        }
-      }
-    };
-    fetchDailyStepData();
-  }, [user]);
-  // useFocusEffect(
-  //   React.useCallback(() => {
-  //     if (userCurrent) {
-  //       setUser({
-  //         email: userCurrent.email || '',
-  //         displayName: userCurrent.displayName,
-  //         photoURL: userCurrent.photoURL,
-  //       });
-  //     } else {
-  //       setUser(null);
-  //     }
-
-  //     // Optional cleanup function
-  //   }, [userCurrent]),
-  // );
-
-  // const syncSteps = useMemo(() => {
-  //   if (steps > 0) {
-  //     return steps + todaySteps;
-  //   } else {
-  //     return todaySteps;
-  //   }
-  // }, [steps, todaySteps]);
   const handleLogout = useCallback(async () => {
     try {
       // await auth().signOut();
       navigation.replace('Login');
     } catch (error: any) {}
   }, [navigation]);
-  // useEffect(()=>{
 
-  // },[userPreferences])
   const handleShare = async () => {
     try {
       await Share.share({
@@ -186,19 +142,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       });
     } catch (error) {}
   };
-  // const progress = currentSteps / dailyGoal;
-  // const distance = (currentSteps * 0.8) / 1000;
-  // const calories = currentSteps * 0.04;
-  useFocusEffect(
-    useCallback(() => {
-      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
-      StatusBar.setBackgroundColor(isDark ? '#0a1a3a' : '#FFFFFF');
-      return () => {
-        StatusBar.setBarStyle('default');
-        StatusBar.setBackgroundColor('#FFFFFF');
-      };
-    }, [isDark]),
-  );
+
   const progressPercentage = useMemo(
     () => calculateDailyStepPercentage(goal?.dailyGoal || 0, steps),
     [goal?.dailyGoal, steps],
@@ -211,21 +155,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     // Optional: Show a small confirmation message
     Alert.alert('Water Added', '250ml of water added to your daily intake!');
   }, [waterIntake]);
-  // useEffect(() => {
-  //   if (steps > 0 && userCurrent?.uid) {
-  //     const saveData = async () => {
-  //       const param: IStepData = {
-  //         step: steps,
-  //         caloriesBurn: stepMetrics?.caloriesBurned || 0,
-  //         minutes: stepMetrics?.spendMinutes || 0,
-  //         kilometers: stepMetrics?.kilometers || 0,
-  //         userId: userCurrent?.uid as string,
-  //       };
-  //       await saveStepDataToFirestore(param);
-  //     };
-  //     saveData();
-  //   }
-  // }, [stepMetrics, steps, userCurrent]);
+
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
@@ -249,7 +179,17 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
     }, [toggleTheme, user]),
   );
   if (isGoalLoading || isSetUserPreferencesLoading) {
-    return <Text>Loading...</Text>;
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: isDark ? '#0a1a3a' : '#fff',
+        }}>
+        <ActivityIndicator size="large" color={isDark ? '#fff' : '#0a1a3a'} />
+      </View>
+    );
   }
   if (
     hasIncompletePresences(userPreferences as any) ||
@@ -279,17 +219,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
             </TouchableOpacity>
           )}
         </View>
-        {/* <Text style={{color: 'white', backgroundColor: 'black', fontSize: 30}}>
-          STEP:{steps}
-        </Text>
-        <TouchableOpacity
-          style={{backgroundColor: 'red', padding: 20}}
-          onPress={async () => {
-            const res = await saveSteps();
-            console.log('response step', res);
-          }}>
-          <Text>Save workout</Text>
-        </TouchableOpacity> */}
+
         <StepProgressCircle
           iGoalReached={iGoalReached}
           dailyStepCount={steps}
