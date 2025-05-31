@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Alert} from 'react-native';
 import {accelerometer} from 'react-native-sensors';
@@ -22,6 +21,7 @@ interface StepTrackerState {
   avgStepsPerHour: number;
   spendMinutes: number;
   isGoalReached: boolean;
+  minutesPerStep: number; // New field to track minutes needed per step
 }
 
 const ACTIVITY_CONFIG = {
@@ -29,28 +29,32 @@ const ACTIVITY_CONFIG = {
     threshold: 10.5,
     stepLengthFactor: 0.35,
     met: 3.0,
+    stepsPerMinute: 100, // Average steps per minute for this activity
   },
   'Brisk walking': {
     threshold: 11.5,
     stepLengthFactor: 0.45,
     met: 3.8,
+    stepsPerMinute: 120,
   },
   Jogging: {
     threshold: 13.0,
     stepLengthFactor: 0.65,
     met: 7.0,
+    stepsPerMinute: 150,
   },
   Running: {
     threshold: 15.0,
     stepLengthFactor: 0.75,
     met: 10.0,
+    stepsPerMinute: 180,
   },
 };
 
 const WINDOW_SIZE = 10;
-const STEP_COOLDOWN_MS = 300; // Minimum time between steps
-const SAVE_DEBOUNCE_MS = 2000; // Debounce time for saving to database
-const MIN_SESSION_DURATION_MS = 60000; // 1 minute minimum for a session
+const STEP_COOLDOWN_MS = 300;
+const SAVE_DEBOUNCE_MS = 2000;
+const MIN_SESSION_DURATION_MS = 60000;
 
 const useStepWriter = (
   activityType: ActivityDataType = 'Brisk walking',
@@ -65,40 +69,46 @@ const useStepWriter = (
     avgStepsPerHour: 0,
     spendMinutes: 0,
     isGoalReached: false,
+    minutesPerStep: 0,
   });
 
   const [newStepCount, setNewStepCount] = useState(0);
   const lastStepTimeRef = useRef<number>(0);
   const sessionStartTimeRef = useRef<number | null>(null);
   const accelDataRef = useRef<number[]>([]);
-  const totalActiveTimeRef = useRef<number>(0); // Track total active time in ms
+  const totalActiveTimeRef = useRef<number>(0);
   const lastUpdateTimeRef = useRef<number>(Date.now());
   const {user} = useHook();
   const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const stepsToGoalRef = useRef<number>(dailyGoal);
 
   const checkDevice = useCallback(async () => {
-    const val = await isIOSVirtualDevice();
-    return val;
+    return await isIOSVirtualDevice();
   }, []);
 
   const calculateMetrics = useCallback(
     (steps: number, activeMinutes: number): Partial<StepTrackerState> => {
       const {height, weight, walkType} = calculate;
-      const {stepLengthFactor, met} = ACTIVITY_CONFIG[walkType];
+      const {stepLengthFactor, met, stepsPerMinute} = ACTIVITY_CONFIG[walkType];
 
       const stepLength = (height * stepLengthFactor) / 100;
       const kilometers = (steps * stepLength) / 1000;
       const caloriesBurned = ((met * 3.5 * weight) / 200) * (steps / 120);
       const avgStepsPerHour =
         activeMinutes > 0 ? (steps / activeMinutes) * 60 : 0;
-
+      const minutesPerStep = steps > 0 ? activeMinutes / steps : 0;
+      const remainingSteps = Math.max(0, dailyGoal - steps);
+      const minutesToGoal = remainingSteps / stepsPerMinute;
+      console.log('minutesPerStepf', minutesToGoal);
       return {
         kilometers,
         caloriesBurned,
         avgStepsPerHour,
+        minutesPerStep,
+        isGoalReached: steps >= dailyGoal,
       };
     },
-    [calculate],
+    [calculate, dailyGoal],
   );
 
   const syncWithDatabase = useCallback(async () => {
@@ -117,52 +127,51 @@ const useStepWriter = (
           steps: stepsData?.steps || prev.steps,
           spendMinutes: activeMinutes,
           walkSessions: stepsData?.walkSessions || prev.walkSessions,
-          isGoalReached: stepsData?.isGoalReached || prev.isGoalReached,
           ...calculateMetrics(stepsData?.steps || prev.steps, activeMinutes),
         }));
 
-        // Initialize total active time
         totalActiveTimeRef.current = activeMinutes * 60000;
+        stepsToGoalRef.current = Math.max(
+          0,
+          dailyGoal - (stepsData?.steps || 0),
+        );
       }
     } catch (error) {
-      console.error('Error syncing data with database:', error);
+      console.error('Error syncing data:', error);
     }
-  }, [user, calculateMetrics]);
+  }, [user, calculateMetrics, dailyGoal]);
 
   const saveDatabase = useCallback(async () => {
     if (!user?._id || newStepCount === 0) {
       return;
     }
 
-    const checkIOSVirtualDevice = await checkDevice();
-    if (checkIOSVirtualDevice) {
+    const isVirtual = await checkDevice();
+    if (isVirtual) {
       return;
     }
 
-    // Calculate session duration if a session is active
     const currentTime = Date.now();
     let sessionDuration = 0;
 
     if (sessionStartTimeRef.current) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       sessionDuration = Math.max(
         Math.round((currentTime - sessionStartTimeRef.current) / 60000),
-        1, // Minimum 1 minute for any session
+        1,
       );
     }
 
     const totalActiveMinutes = Math.round(totalActiveTimeRef.current / 60000);
-    const {kilometers, caloriesBurned, avgStepsPerHour} = calculateMetrics(
-      state.steps,
-      totalActiveMinutes,
-    );
+    const metrics = calculateMetrics(state.steps, totalActiveMinutes);
 
     const payload: ISteps = {
-      steps: state.steps,
-      caloriesBurned: caloriesBurned || 0,
-      kilometers: kilometers || 0,
-      avgStepsPerHour: avgStepsPerHour || 0,
+      steps: newStepCount,
+      caloriesBurned: metrics.caloriesBurned || 0,
+      kilometers: metrics.kilometers || 0,
+      avgStepsPerHour: metrics.avgStepsPerHour || 0,
       spendMinutes: totalActiveMinutes,
-      isGoalReached: state.isGoalReached,
+      isGoalReached: metrics.isGoalReached || false,
       user: user._id,
       date: new Date(),
       walkSessions: state.walkSessions,
@@ -175,66 +184,55 @@ const useStepWriter = (
         sessionStartTimeRef.current = null;
       }
     } catch (error) {
-      console.error('Error saving data to database:', error);
-      Alert.alert(
-        'Error',
-        'Unable to save/update step data. Please try again.',
-      );
+      console.error('Error saving data:', error);
+      Alert.alert('Error', 'Unable to save step data. Please try again.');
     }
   }, [
-    calculateMetrics,
-    checkDevice,
-    newStepCount,
     user,
+    newStepCount,
+    checkDevice,
     state.steps,
-    state.isGoalReached,
     state.walkSessions,
+    calculateMetrics,
   ]);
 
-  // Update active time when steps are being taken
   const updateActiveTime = useCallback(() => {
     const now = Date.now();
     const timeSinceLastUpdate = now - lastUpdateTimeRef.current;
 
-    // Only count time if we're in an active session
     if (sessionStartTimeRef.current) {
       totalActiveTimeRef.current += timeSinceLastUpdate;
+      const totalActiveMinutes = totalActiveTimeRef.current / 60000;
 
       setState(prev => ({
         ...prev,
-        spendMinutes: Math.round(totalActiveTimeRef.current / 60000),
-        ...calculateMetrics(prev.steps, totalActiveTimeRef.current / 60000),
+        spendMinutes: Math.round(totalActiveMinutes),
+        ...calculateMetrics(prev.steps, totalActiveMinutes),
       }));
     }
 
     lastUpdateTimeRef.current = now;
   }, [calculateMetrics]);
 
-  // Initial sync with database
   useEffect(() => {
     syncWithDatabase();
   }, [syncWithDatabase]);
 
-  // Check goal achievement
   useEffect(() => {
     if (dailyGoal > 0) {
       setState(prev => ({
         ...prev,
-        isGoalReached: prev.steps >= dailyGoal,
+        ...calculateMetrics(prev.steps, prev.spendMinutes),
       }));
+      stepsToGoalRef.current = Math.max(0, dailyGoal - state.steps);
     }
-  }, [dailyGoal, state.steps]);
+  }, [dailyGoal, state.steps, calculateMetrics]);
 
-  // Step detection logic
   useEffect(() => {
-    if (state.isGoalReached) {
-      return;
-    }
+    if (state.isGoalReached) return;
 
     checkDevice().then(isVirtual => {
-      if (isVirtual) {
-        return;
-      }
+      if (isVirtual) return;
     });
 
     const subscription = accelerometer.subscribe(({x, y, z}) => {
@@ -253,24 +251,24 @@ const useStepWriter = (
           avgMagnitude > threshold &&
           currentTime - lastStepTimeRef.current > STEP_COOLDOWN_MS
         ) {
-          // Start a new session if one isn't active
           if (!sessionStartTimeRef.current) {
             sessionStartTimeRef.current = currentTime;
-            setState(prev => ({
-              ...prev,
-              walkSessions: prev.walkSessions + 1,
-            }));
+            setState(prev => ({...prev, walkSessions: prev.walkSessions + 1}));
           }
 
           updateActiveTime();
 
           setNewStepCount(prev => prev + 1);
           setState(prev => {
-            const newSteps = prev.steps + 1;
+            const newSteps = Math.min(prev.steps + 1, dailyGoal);
+            const metrics = calculateMetrics(
+              newSteps,
+              totalActiveTimeRef.current / 60000,
+            );
             return {
               ...prev,
               steps: newSteps,
-              ...calculateMetrics(newSteps, totalActiveTimeRef.current / 60000),
+              ...metrics,
             };
           });
 
@@ -279,7 +277,6 @@ const useStepWriter = (
       }
     });
 
-    // Set up interval to update active time even when no steps are detected
     const activeTimeInterval = setInterval(updateActiveTime, 10000);
 
     return () => {
@@ -292,22 +289,18 @@ const useStepWriter = (
     checkDevice,
     state.isGoalReached,
     updateActiveTime,
+    dailyGoal,
   ]);
 
-  // Debounced save to database
   useEffect(() => {
-    if (saveDebounceRef.current) {
-      clearTimeout(saveDebounceRef.current);
-    }
+    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
 
     saveDebounceRef.current = setTimeout(() => {
       saveDatabase();
     }, SAVE_DEBOUNCE_MS);
 
     return () => {
-      if (saveDebounceRef.current) {
-        clearTimeout(saveDebounceRef.current);
-      }
+      if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
     };
   }, [newStepCount, saveDatabase]);
 

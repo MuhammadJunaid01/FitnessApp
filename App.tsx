@@ -64,7 +64,7 @@ function MainTabs() {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#4caf50',
-        tabBarInactiveTintColor: 'white',
+        tabBarInactiveTintColor: isDark ? 'white' : '#0a1a3a',
         tabBarStyle: {
           display: shouldHideTabBar ? 'none' : 'flex',
           backgroundColor: isDark ? '#0a1a3a' : '#ffffff', // Dynamic background color

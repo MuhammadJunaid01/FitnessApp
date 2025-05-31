@@ -66,7 +66,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
 
     return defaults;
   }, [userPreferences]);
-  const {steps, caloriesBurned, kilometers, iGoalReached, spendMinutes} =
+  const {steps, caloriesBurned, kilometers, isGoalReached, spendMinutes} =
     useStepWriter('Slow walking', goal?.dailyGoal || 0, metricsData);
   // const [stepMetrics, setStepMetrics] = useState<AvgStepsMetrics | null>(null);
   // const navigation = useNavigation();
@@ -213,6 +213,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
       />
     );
   }
+  console.log('isGoalReached', isGoalReached);
   return (
     <SafeAreaView style={theme.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -230,7 +231,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
         </View>
 
         <StepProgressCircle
-          iGoalReached={iGoalReached}
+          iGoalReached={isGoalReached}
           dailyStepCount={steps}
           dailyGoal={goal?.dailyGoal || 0}
           isLoadingGoal={false}
