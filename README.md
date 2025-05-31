@@ -26,6 +26,15 @@ Fitness Tracker is a cross-platform mobile application built with React Native, 
 
 ## File Structure
 
+- App.tsx: Main entry, navigation, and providers
+- components: UI components (charts, cards, settings, etc.)
+- screens: App screens (Home, Login, Profile, etc.)
+- hooks: Custom hooks and context
+- lib: Utilities, data, interfaces
+- routes: Navigation routes
+- android, ios: Native code
+- **tests**: Tests
+
 ```
 FitnessTracker/
 ├── App.tsx                # Main app entry point, navigation
