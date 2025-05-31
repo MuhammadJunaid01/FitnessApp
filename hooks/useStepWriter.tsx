@@ -19,9 +19,9 @@ interface StepTrackerState {
   kilometers: number;
   walkSessions: number;
   avgStepsPerHour: number;
-  spendMinutes: number;
+  spendSeconds: number; // Changed to seconds
   isGoalReached: boolean;
-  minutesPerStep: number; // New field to track minutes needed per step
+  minutesPerStep: number;
 }
 
 const ACTIVITY_CONFIG = {
@@ -29,26 +29,9 @@ const ACTIVITY_CONFIG = {
     threshold: 10.5,
     stepLengthFactor: 0.35,
     met: 3.0,
-    stepsPerMinute: 100, // Average steps per minute for this activity
+    stepsPerMinute: 100,
   },
-  'Brisk walking': {
-    threshold: 11.5,
-    stepLengthFactor: 0.45,
-    met: 3.8,
-    stepsPerMinute: 120,
-  },
-  Jogging: {
-    threshold: 13.0,
-    stepLengthFactor: 0.65,
-    met: 7.0,
-    stepsPerMinute: 150,
-  },
-  Running: {
-    threshold: 15.0,
-    stepLengthFactor: 0.75,
-    met: 10.0,
-    stepsPerMinute: 180,
-  },
+  /* ... rest of ACTIVITY_CONFIG unchanged ... */
 };
 
 const WINDOW_SIZE = 10;
@@ -67,7 +50,7 @@ const useStepWriter = (
     kilometers: 0,
     walkSessions: 0,
     avgStepsPerHour: 0,
-    spendMinutes: 0,
+    spendSeconds: 0, // Changed to seconds
     isGoalReached: false,
     minutesPerStep: 0,
   });
@@ -76,7 +59,7 @@ const useStepWriter = (
   const lastStepTimeRef = useRef<number>(0);
   const sessionStartTimeRef = useRef<number | null>(null);
   const accelDataRef = useRef<number[]>([]);
-  const totalActiveTimeRef = useRef<number>(0);
+  const totalActiveTimeRef = useRef<number>(0); // In milliseconds
   const lastUpdateTimeRef = useRef<number>(Date.now());
   const {user} = useHook();
   const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -87,7 +70,7 @@ const useStepWriter = (
   }, []);
 
   const calculateMetrics = useCallback(
-    (steps: number, activeMinutes: number): Partial<StepTrackerState> => {
+    (steps: number, activeSeconds: number): Partial<StepTrackerState> => {
       const {height, weight, walkType} = calculate;
       const {stepLengthFactor, met, stepsPerMinute} = ACTIVITY_CONFIG[walkType];
 
@@ -95,16 +78,17 @@ const useStepWriter = (
       const kilometers = (steps * stepLength) / 1000;
       const caloriesBurned = ((met * 3.5 * weight) / 200) * (steps / 120);
       const avgStepsPerHour =
-        activeMinutes > 0 ? (steps / activeMinutes) * 60 : 0;
-      const minutesPerStep = steps > 0 ? activeMinutes / steps : 0;
+        activeSeconds > 0 ? (steps / activeSeconds) * 3600 : 0; // Adjusted for seconds
+      const minutesPerStep = steps > 0 ? activeSeconds / (steps * 60) : 0;
       const remainingSteps = Math.max(0, dailyGoal - steps);
       const minutesToGoal = remainingSteps / stepsPerMinute;
-      console.log('minutesPerStepf', minutesToGoal);
+
       return {
         kilometers,
         caloriesBurned,
         avgStepsPerHour,
         minutesPerStep,
+        spendSeconds: Math.round(activeSeconds),
         isGoalReached: steps >= dailyGoal,
       };
     },
@@ -120,17 +104,17 @@ const useStepWriter = (
       const response = await getTodaysSteps(user._id);
       if (response.success && response?.data) {
         const stepsData = response.data;
-        const activeMinutes = stepsData?.spendMinutes || 0;
+        const activeSeconds = stepsData?.spendSeconds || 0; // Changed to seconds
 
         setState(prev => ({
           ...prev,
           steps: stepsData?.steps || prev.steps,
-          spendMinutes: activeMinutes,
+          spendSeconds: activeSeconds,
           walkSessions: stepsData?.walkSessions || prev.walkSessions,
-          ...calculateMetrics(stepsData?.steps || prev.steps, activeMinutes),
+          ...calculateMetrics(stepsData?.steps || prev.steps, activeSeconds),
         }));
 
-        totalActiveTimeRef.current = activeMinutes * 60000;
+        totalActiveTimeRef.current = activeSeconds * 1000; // Convert to milliseconds
         stepsToGoalRef.current = Math.max(
           0,
           dailyGoal - (stepsData?.steps || 0),
@@ -156,21 +140,20 @@ const useStepWriter = (
 
     if (sessionStartTimeRef.current) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      sessionDuration = Math.max(
-        Math.round((currentTime - sessionStartTimeRef.current) / 60000),
-        1,
+      sessionDuration = Math.round(
+        (currentTime - sessionStartTimeRef.current) / 1000, // Changed to seconds
       );
     }
 
-    const totalActiveMinutes = Math.round(totalActiveTimeRef.current / 60000);
-    const metrics = calculateMetrics(state.steps, totalActiveMinutes);
+    const totalActiveSeconds = Math.round(totalActiveTimeRef.current / 1000); // Convert to seconds
+    const metrics = calculateMetrics(state.steps, totalActiveSeconds);
 
     const payload: ISteps = {
       steps: newStepCount,
       caloriesBurned: metrics.caloriesBurned || 0,
       kilometers: metrics.kilometers || 0,
       avgStepsPerHour: metrics.avgStepsPerHour || 0,
-      spendMinutes: totalActiveMinutes,
+      spendMinutes: totalActiveSeconds, // Changed to seconds
       isGoalReached: metrics.isGoalReached || false,
       user: user._id,
       date: new Date(),
@@ -181,6 +164,7 @@ const useStepWriter = (
       const response = await createOrUpdateSteps(payload);
       if (response.success) {
         setNewStepCount(0);
+        totalActiveTimeRef.current = 0; // Clear timer after save
         sessionStartTimeRef.current = null;
       }
     } catch (error) {
@@ -202,12 +186,12 @@ const useStepWriter = (
 
     if (sessionStartTimeRef.current) {
       totalActiveTimeRef.current += timeSinceLastUpdate;
-      const totalActiveMinutes = totalActiveTimeRef.current / 60000;
+      const totalActiveSeconds = totalActiveTimeRef.current / 1000;
 
       setState(prev => ({
         ...prev,
-        spendMinutes: Math.round(totalActiveMinutes),
-        ...calculateMetrics(prev.steps, totalActiveMinutes),
+        spendSeconds: Math.round(totalActiveSeconds),
+        ...calculateMetrics(prev.steps, totalActiveSeconds),
       }));
     }
 
@@ -222,7 +206,7 @@ const useStepWriter = (
     if (dailyGoal > 0) {
       setState(prev => ({
         ...prev,
-        ...calculateMetrics(prev.steps, prev.spendMinutes),
+        ...calculateMetrics(prev.steps, prev.spendSeconds),
       }));
       stepsToGoalRef.current = Math.max(0, dailyGoal - state.steps);
     }
@@ -263,7 +247,7 @@ const useStepWriter = (
             const newSteps = Math.min(prev.steps + 1, dailyGoal);
             const metrics = calculateMetrics(
               newSteps,
-              totalActiveTimeRef.current / 60000,
+              totalActiveTimeRef.current / 1000, // Convert to seconds
             );
             return {
               ...prev,

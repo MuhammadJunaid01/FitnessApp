@@ -66,7 +66,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
 
     return defaults;
   }, [userPreferences]);
-  const {steps, caloriesBurned, kilometers, isGoalReached, spendMinutes} =
+  const {steps, caloriesBurned, kilometers, isGoalReached, spendSeconds} =
     useStepWriter('Slow walking', goal?.dailyGoal || 0, metricsData);
   // const [stepMetrics, setStepMetrics] = useState<AvgStepsMetrics | null>(null);
   // const navigation = useNavigation();
@@ -260,7 +260,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
           />
           <StatCard
             label="MINUTES"
-            value={spendMinutes?.toFixed(2) ?? '0.00'}
+            value={(spendSeconds / 60)?.toFixed(2) ?? '0.00'}
             iconName="timer-outline"
             isDarkMode={isDark}
             iconColor={isDark ? '#fff' : '#ff7f50'}
