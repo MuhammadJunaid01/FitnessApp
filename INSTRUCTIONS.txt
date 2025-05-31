@@ -1,0 +1,115 @@
+# INSTRUCTIONS.txt
+
+## Setup Instructions
+
+### Prerequisites
+- Node.js (v18 or higher recommended)
+- npm or Yarn
+- React Native CLI (`npm install -g react-native-cli`)
+- Android Studio (for Android development)
+- Xcode & CocoaPods (for iOS development, macOS only)
+- A Firebase project (for authentication, database, etc.)
+
+### Environment Variables
+Create a `.env` file in the project root for sensitive configuration. Example variables:
+```
+FIREBASE_API_KEY=your_firebase_api_key
+FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+FIREBASE_APP_ID=your_firebase_app_id
+```
+
+### Firebase Setup
+1. Go to [Firebase Console](https://console.firebase.google.com/) and create a new project.
+2. Add Android/iOS apps to your Firebase project and follow the setup instructions.
+3. Download the `google-services.json` (Android) and/or `GoogleService-Info.plist` (iOS) and place them in the appropriate native folders:
+   - Android: `android/app/google-services.json`
+   - iOS: `ios/FitnessTracker/GoogleService-Info.plist`
+4. Enable required Firebase services (Authentication, Firestore, etc.) in the Firebase Console.
+5. Install Firebase SDK if not already present:
+   ```sh
+   npm install firebase
+   # or
+   yarn add firebase
+   ```
+
+## Codebase Guide
+
+### Folder Structure
+- `App.tsx`: Main entry point, navigation setup, providers
+- `components/`: Reusable UI components (charts, cards, settings, etc.)
+- `screens/`: App screens (Home, Login, Profile, etc.)
+- `hooks/`: Custom React hooks and context providers
+- `lib/`: Utilities, data, interfaces, and helper functions
+  - `utils/`: Utility helpers (db, toast, apis)
+- `routes/`: Navigation route definitions
+- `android/`, `ios/`: Native project files
+- `__tests__/`: Test files
+
+### Major Modules
+- **Navigation:** Managed in `App.tsx` and `routes/`
+- **State Management:** Context and hooks in `hooks/`
+- **UI Components:** Modular, reusable components in `components/`
+- **Backend Integration:** Firebase setup and API calls in `lib/`
+- **Screens:** User-facing features and flows in `screens/`
+
+## Development Guidelines
+
+### Code Style
+- Follow ESLint rules (`npm run lint`)
+- Use Prettier for formatting (see `.prettierrc.js`)
+- Use TypeScript for all new files
+- Use functional components and hooks
+
+### Adding Features or Fixing Bugs
+1. Create a new branch: `git checkout -b feature/your-feature` or `bugfix/your-bug`
+2. Make your changes in the relevant module or screen
+3. Add/modify tests in `__tests__/` if needed
+4. Run lint and tests before committing
+5. Commit with a descriptive message
+6. Open a Pull Request for review
+
+### Testing
+- Run tests: `npm test` or `yarn test`
+- Add tests for new features and bug fixes
+- Use Jest and React Native Testing Library for unit/integration tests
+
+## Debugging Tips
+
+### Common Issues & Solutions
+- **Metro bundler stuck:** Stop all Metro processes and run `npm start --reset-cache`
+- **Android build fails:** Run `cd android && ./gradlew clean`
+- **iOS build fails:** Run `cd ios && pod install`
+- **Dependency issues:** Delete `node_modules` and reinstall (`npm install`)
+- **App not connecting to Firebase:** Check `.env` variables and native config files
+
+### Useful Debugging Commands
+- Start Metro: `npm start` or `yarn start`
+- Run Android: `npm run android` or `yarn android`
+- Run iOS: `npm run ios` or `yarn ios`
+- Lint code: `npm run lint`
+- Run tests: `npm test`
+
+## Deployment Instructions
+
+### Android
+1. Generate a signed APK or AAB:
+   ```sh
+   cd android
+   ./gradlew assembleRelease   # For APK
+   ./gradlew bundleRelease     # For AAB
+   ```
+2. Find the output in `android/app/build/outputs/`
+3. Upload to Google Play Console
+
+### iOS
+1. Open `ios/FitnessTracker.xcworkspace` in Xcode
+2. Select a device and set the build scheme to `Release`
+3. Archive the app (Product > Archive)
+4. Distribute via TestFlight or App Store Connect
+
+---
+
+For more details, refer to the README.md and official React Native documentation.
