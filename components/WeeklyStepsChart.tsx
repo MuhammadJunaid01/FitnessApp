@@ -98,7 +98,7 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
     {
       value: Math.round(latestData?.spendMinutes || 0),
       color: colors.accent,
-      text: (latestData?.spendMinutes / 60).toFixed(1) || 0,
+      text: String((latestData?.spendMinutes / 60).toFixed(1) || 0),
       label: 'Minutes',
     },
   ];

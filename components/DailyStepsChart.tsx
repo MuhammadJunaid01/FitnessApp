@@ -72,7 +72,7 @@ const DailyStepsChart: React.FC<DailyStepsChartProps> = ({
     {
       value: Math.max(Math.round(latestData.spendMinutes), 1),
       color: colors.accent,
-      text: `${Math.round(latestData.spendMinutes)}min`,
+      text: `${(latestData.spendMinutes / 60).toFixed(1)}min`,
       label: 'Time',
     },
   ];
@@ -122,7 +122,7 @@ const DailyStepsChart: React.FC<DailyStepsChartProps> = ({
     },
     {
       title: 'Time (min)',
-      value: latestData.spendMinutes.toFixed(1),
+      value: (latestData.spendMinutes / 60).toFixed(1),
       color: colors.accent,
       trend:
         fitnessData.length > 1
