@@ -149,7 +149,7 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
     },
     {
       title: 'Time (min)',
-      value: latestData.spendMinutes.toFixed(1),
+      value: latestData.spendMinutes.toFixed(1) || 0,
       color: colors.accent,
       trend:
         fitnessData?.length > 1
@@ -163,21 +163,44 @@ const FitnessDashboard: React.FC<FitnessDashboardProps> = ({
     },
   ];
 
-  const renderSummaryCard = (card: any, index: number) => (
-    <View
-      key={index}
-      style={[styles.summaryCard, {backgroundColor: colors.cardBackground}]}>
-      <Text style={[styles.cardTitle, {color: colors.text}]}>{card.title}</Text>
-      <Text style={[styles.cardValue, {color: card.color}]}>{card.value}</Text>
-      <Text
-        style={[
-          styles.cardTrend,
-          {color: parseFloat(card.trend) >= 0 ? colors.success : colors.danger},
-        ]}>
-        {parseFloat(card.trend) >= 0 ? '↗' : '↘'}{' '}
-        {Math.abs(parseFloat(card.trend))}%
-      </Text>
-    </View>
+  const renderSummaryCard = useCallback(
+    (card: any, index: number) => {
+      const trendValue = parseFloat(card.trend);
+      const isTrendValid = !isNaN(trendValue);
+
+      return (
+        <View
+          key={index}
+          style={[
+            styles.summaryCard,
+            {backgroundColor: colors.cardBackground},
+          ]}>
+          <Text style={[styles.cardTitle, {color: colors.text}]}>
+            {card.title}
+          </Text>
+          <Text style={[styles.cardValue, {color: card.color}]}>
+            {card.value || 'N/A'}
+            {/* Fallback to 'N/A' if card.value is undefined or null */}
+          </Text>
+          <Text
+            style={[
+              styles.cardTrend,
+              {
+                color:
+                  isTrendValid && trendValue >= 0
+                    ? colors.success
+                    : colors.danger,
+              },
+            ]}>
+            {isTrendValid
+              ? `${trendValue >= 0 ? '↗' : '↘'} ${Math.abs(trendValue)}%`
+              : 'N/A'}
+            {/* Fallback to 'N/A' if trendValue is not valid */}
+          </Text>
+        </View>
+      );
+    },
+    [colors.cardBackground, colors.danger, colors.success, colors.text],
   );
 
   const getCurrentChartData = () => {

@@ -116,6 +116,14 @@ export const getStepsByDateRange = async (
   );
   return response.data;
 };
+export const getTodaysSteps = async (
+  userId: string,
+): Promise<IGenericResponse<ISteps>> => {
+  const response = await axiosInstance.get<IGenericResponse<ISteps>>(
+    `/steps/todays-steps/${userId}`,
+  );
+  return response.data;
+};
 export const getUserStats = async (
   userId: string,
 ): Promise<IGenericResponse<IUserPhysicalStats>> => {
