@@ -31,7 +31,24 @@ const ACTIVITY_CONFIG = {
     met: 3.0,
     stepsPerMinute: 100,
   },
-  /* ... rest of ACTIVITY_CONFIG unchanged ... */
+  'Brisk walking': {
+    threshold: 12.0,
+    stepLengthFactor: 0.4,
+    met: 4.3,
+    stepsPerMinute: 130,
+  },
+  Jogging: {
+    threshold: 13.5,
+    stepLengthFactor: 0.45,
+    met: 7.0,
+    stepsPerMinute: 160,
+  },
+  Running: {
+    threshold: 15.0,
+    stepLengthFactor: 0.5,
+    met: 9.8,
+    stepsPerMinute: 180,
+  },
 };
 
 const WINDOW_SIZE = 10;
@@ -104,7 +121,7 @@ const useStepWriter = (
       const response = await getTodaysSteps(user._id);
       if (response.success && response?.data) {
         const stepsData = response.data;
-        const activeSeconds = stepsData?.spendSeconds || 0; // Changed to seconds
+        const activeSeconds = stepsData?.spendMinutes || 0; // Changed to seconds
 
         setState(prev => ({
           ...prev,
